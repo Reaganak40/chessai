@@ -31,5 +31,12 @@ namespace Chess
 
         public static Texture2D PieceTexture { get; set; }
 
+        public static GameWindow Window { get; set; }
+
+        public static void SetTitle(string title)
+        {
+            Globals.Window.Title = title;
+        }
+
     }
 }

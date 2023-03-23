@@ -22,7 +22,7 @@ namespace Chess
             this._graphics.PreferredBackBufferHeight = 800;
             Globals.WindowWidth = this._graphics.PreferredBackBufferWidth;
             Globals.WindowHeight = this._graphics.PreferredBackBufferHeight;
-            
+            Globals.Window = this.Window;
         }
 
         protected override void Initialize()
@@ -30,7 +30,8 @@ namespace Chess
             // TODO: Add your initialization logic here
             Globals.Content = this.Content;
 
-            this.controller = new Controller();
+            string pgn_path = "data/pgn/garry-kasparov-vs-deep-blue_game-1.pgn";
+            this.controller = new Controller(pgn_path);
 
             base.Initialize();
         }
@@ -41,7 +42,7 @@ namespace Chess
             Globals.DrawBatch = _spriteBatch;
 
 
-            // TODO: use this.Content to load your game content here
+            this.controller.Load();
         }
 
         protected override void Update(GameTime gameTime)

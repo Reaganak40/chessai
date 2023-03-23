@@ -5,9 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
+using System.IO;
 namespace Chess
 {
     internal class Controller
@@ -16,19 +18,37 @@ namespace Chess
         private MouseState lastMouseState;
         private MouseState currentMouseState;
 
+        private string pathToPGN;
 
 
-        public Controller()
+        public Controller(string pathToPGN=null)
         {
-
             chessboard = new Board();
             this.currentMouseState = Mouse.GetState();
 
+            if (pathToPGN != null ) 
+            {
+                this.pathToPGN = Directory.GetParent(Environment.CurrentDirectory).Parent.Parent.FullName + "/" + pathToPGN;
+            }
+            else
+            {
+                this.pathToPGN = pathToPGN;
+            }
         }
 
         public void Load()
         {
-            
+            if (this.pathToPGN != null)
+            {
+                if( File.Exists(this.pathToPGN) )
+                {
+                    Globals.SetTitle("Game Replay - Success");
+                }
+                else
+                {
+                    Globals.SetTitle("Game Replay - File Not Found");
+                }
+            }
         }
 
         public void Update()
