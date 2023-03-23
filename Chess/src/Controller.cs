@@ -40,9 +40,10 @@ namespace Chess
         {
             if (this.pathToPGN != null)
             {
-                if( File.Exists(this.pathToPGN) )
+                if (File.Exists(this.pathToPGN))
                 {
                     Globals.SetTitle("Game Replay - Success");
+                    PGNReader.ReadPGN(this.pathToPGN);
                 }
                 else
                 {
