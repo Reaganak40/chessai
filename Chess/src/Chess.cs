@@ -30,7 +30,7 @@ namespace Chess
             // TODO: Add your initialization logic here
             Globals.Content = this.Content;
 
-            string pgn_path = "data/pgn/garry-kasparov-vs-deep-blue_game-1.pgn";
+            string pgn_path = "data/pgn/Garry Kasparov vs Deep-Blue Game-1.pgn";
             this.controller = new Controller(pgn_path);
 
             base.Initialize();

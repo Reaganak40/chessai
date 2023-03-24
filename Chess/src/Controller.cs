@@ -29,6 +29,8 @@ namespace Chess
             if (pathToPGN != null ) 
             {
                 this.pathToPGN = Directory.GetParent(Environment.CurrentDirectory).Parent.Parent.FullName + "/" + pathToPGN;
+                this.pathToPGN = this.pathToPGN.Replace("\\", "/");
+                Debug.WriteLine(this.pathToPGN);
             }
             else
             {
@@ -42,7 +44,8 @@ namespace Chess
             {
                 if (File.Exists(this.pathToPGN))
                 {
-                    Globals.SetTitle("Game Replay - Success");
+                    string gameName = Path.GetFileName(this.pathToPGN).Split(".")[0];
+                    Globals.SetTitle("Game Replay - " + gameName);
                     PGNReader.ReadPGN(this.pathToPGN);
                 }
                 else
