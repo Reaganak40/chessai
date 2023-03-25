@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,89 +10,91 @@ namespace Chess
 {
     internal class BoardState
     {
-        private PieceType[] configuration;
+        private Piece[] configuration;
         private string lastMove;
-        private int moveNumber;
 
         private bool whiteKingMoved;
         private bool blackKingMoved;
+        private int moveNumber;
+        private int turn;
 
-        public BoardState(PieceType[] customConfiguration = null, string lastMove = null, int moveNumber = 0)
+        public BoardState(List<Piece> white_pieces, List<Piece> black_pieces)
         {
-            if (!(customConfiguration is null))
-            {
-                this.configuration = customConfiguration;
-            }
-            else
-            {
-                this.configuration = new PieceType[64];
+            this.configuration = new Piece[64];
 
-                for (int i = 16; i < 48; i++)
+            for (int i = 0; i < 64; i++)
+            {
+                this.configuration[i] = new Piece(PieceType.None, GetSquareFromIndex(i));
+            }
+
+            foreach(Piece piece in white_pieces)
+            {
+                this.configuration[GetIndexOfPositionArray(piece.GetSquare())] = piece;
+            }
+
+            foreach (Piece piece in black_pieces)
+            {
+                this.configuration[GetIndexOfPositionArray(piece.GetSquare())] = piece;
+            }
+
+            this.whiteKingMoved = false;
+            this.blackKingMoved = false;
+            this.moveNumber = 1;
+            this.turn = 0;
+        }
+
+        public void Move(string moveNotation)
+        {
+            string square2 = moveNotation;
+            if (moveNotation.Count() == 2)
+            {
+                // this is a pawn move
+                int board_index = GetIndexOfPositionArray(square2);
+
+                if(turn == 0)
                 {
-                    this.configuration[i] = PieceType.None;
+                    // white's turn
+                    for(int i = 1; i <= 2; i++)
+                    {
+                        if (this.configuration[board_index + (i * 8)].Type == PieceType.White_Pawn)
+                        {
+                            string square1 = GetSquareFromIndex(board_index + (i * 8));
+                            this.Move(square1, square2);
+                        }
+                    }
                 }
-
-                this.configuration[0] = PieceType.Black_Rook;
-                this.configuration[1] = PieceType.Black_Knight;
-                this.configuration[2] = PieceType.Black_Bishop;
-                this.configuration[3] = PieceType.Black_Queen;
-                this.configuration[4] = PieceType.Black_King;
-                this.configuration[5] = PieceType.Black_Bishop;
-                this.configuration[6] = PieceType.Black_Knight;
-                this.configuration[7] = PieceType.Black_Rook;
-
-                for (int i = 8; i < 16; i++)
+                else
                 {
-                    this.configuration[i] = PieceType.Black_Pawn;
-                }
-
-                this.configuration[56] = PieceType.White_Rook;
-                this.configuration[57] = PieceType.White_Knight;
-                this.configuration[58] = PieceType.White_Bishop;
-                this.configuration[59] = PieceType.White_Queen;
-                this.configuration[60] = PieceType.White_King;
-                this.configuration[61] = PieceType.White_Bishop;
-                this.configuration[62] = PieceType.White_Knight;
-                this.configuration[63] = PieceType.White_Rook;
-
-                for (int i = 48; i < 56; i++)
-                {
-                    this.configuration[i] = PieceType.White_Pawn;
+                    // black's turn
+                    // white's turn
+                    for (int i = 1; i <= 2; i++)
+                    {
+                        if (this.configuration[board_index - (i * 8)].Type == PieceType.Black_Pawn)
+                        {
+                            string square1 = GetSquareFromIndex(board_index - (i * 8));
+                            this.Move(square1, square2);
+                        }
+                    }
                 }
             }
-
-            if (!(lastMove is null))
-            {
-                this.lastMove = lastMove;
-            }
-            else
-            {
-                this.lastMove = string.Empty;
-            }
-
-            this.moveNumber = moveNumber;
         }
 
         public void Move(string square1, string square2)
         {
-            Debug.WriteLine(Piece.GetIndexOfPositionArray(square1) + " to " + Piece.GetIndexOfPositionArray(square2));
-            PieceType pieceOnSquare1 = this.configuration[Piece.GetIndexOfPositionArray(square1)];
-            this.configuration[Piece.GetIndexOfPositionArray(square2)] = pieceOnSquare1;
-            this.configuration[Piece.GetIndexOfPositionArray(square1)] = PieceType.None;
+            int from = GetIndexOfPositionArray(square1);
+            int to = GetIndexOfPositionArray(square2);
 
-            this.moveNumber++;
-        }
+            this.configuration[to].SetPiece(this.configuration[from].Type);
+            this.configuration[from].SetPiece(PieceType.None);
 
-        public PieceType[] Configuration
-        {
-            get
+            if (this.turn == 1)
             {
-                return this.configuration;
+                this.moveNumber++;
+                this.turn = 0;
             }
-
-            set
+            else
             {
-                this.configuration = value;
+                this.turn = 1;
             }
         }
 
@@ -137,6 +140,25 @@ namespace Chess
             }
         }
 
+        public static string GetSquareFromIndex(int index)
+        {
+            string res = (char)(65 + (index % 8)) + (8 - (index / 8)).ToString();
+            //Debug.WriteLine(index.ToString() + ": " + res);
+            return res;
+        }
+
+        public static int GetIndexOfPositionArray(string square)
+        {
+            if (square.Length != 2)
+            {
+                throw new ArgumentException(square + " must be a chessboard sqaure value.");
+            }
+
+            int res = (int)(('8' - square[1]) * 8) + (int)(char.ToUpper(square[0]) - 'A');
+            //Debug.WriteLine("square [" + square + "]: " + res.ToString());
+            return res;
+        }
+
         public override string ToString()
         {
             StringBuilder ret = new StringBuilder("");
@@ -146,13 +168,24 @@ namespace Chess
                 for (int col = 0; col < 8; col++)
                 {
                     ret.Append("[");
-                    string square = this.PieceSymbol(this.configuration[(row * 8) + col]);
+                    string square = this.PieceSymbol(this.configuration[(row * 8) + col].Type);
                     ret.Append(square.PadRight(3));
                     ret.Append("] ");
                 }
                 ret.Append("\n");
             }
             return ret.ToString();
+        }
+
+        public void DrawPieces()
+        {
+            foreach (Piece piece in this.configuration)
+            {
+                if (piece.Type != PieceType.None)
+                {
+                    piece.Draw();
+                }
+            }
         }
     }
 }

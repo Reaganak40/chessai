@@ -17,14 +17,24 @@ namespace Chess
         private Board chessboard;
         private MouseState lastMouseState;
         private MouseState currentMouseState;
+        
+        private KeyboardState currentKeyState;
+        private KeyboardState oldKeyState;
 
         private string pathToPGN;
 
+        private List<string[]> moves;
+        private int move_index;
+        private int turn;
 
         public Controller(string pathToPGN=null)
         {
             chessboard = new Board();
             this.currentMouseState = Mouse.GetState();
+
+            this.currentKeyState = Keyboard.GetState();
+            this.oldKeyState = this.currentKeyState;
+
 
             if (pathToPGN != null ) 
             {
@@ -36,6 +46,8 @@ namespace Chess
             {
                 this.pathToPGN = pathToPGN;
             }
+            this.move_index = 0;
+            this.turn = 0;
         }
 
         public void Load()
@@ -46,7 +58,8 @@ namespace Chess
                 {
                     string gameName = Path.GetFileName(this.pathToPGN).Split(".")[0];
                     Globals.SetTitle("Game Replay - " + gameName);
-                    PGNReader.ReadPGN(this.pathToPGN);
+                    this.moves = PGNReader.ReadPGN(this.pathToPGN);
+                    this.chessboard.LoadGame(this.moves);
                 }
                 else
                 {
@@ -60,7 +73,30 @@ namespace Chess
             this.lastMouseState = this.currentMouseState;
             this.currentMouseState = Mouse.GetState();
 
+
             var mousePosition = new Point(currentMouseState.X, currentMouseState.Y);
+
+            
+            // handle the input
+            this.currentKeyState = Keyboard.GetState();
+            if (oldKeyState.IsKeyUp(Keys.Right) && currentKeyState.IsKeyDown(Keys.Right))
+            {
+                this.chessboard.Move(this.moves[this.move_index][this.turn]);
+                if (this.turn == 1)
+                {
+                    move_index += 1;
+                    this.turn = 0;
+                }
+                else
+                {
+                    this.turn = 1;
+                }
+            }
+            else if (oldKeyState.IsKeyUp(Keys.Left) && currentKeyState.IsKeyDown(Keys.Left))
+            {
+                move_index -= 1;
+            }
+            this.oldKeyState = this.currentKeyState;
 
 
             if (currentMouseState.LeftButton == ButtonState.Released)

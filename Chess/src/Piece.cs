@@ -44,9 +44,42 @@ namespace Chess
             this.type = pieceType;
             this.texture = Globals.Content.Load<Texture2D>("pieces");
             this.coords = new Vector2();
-            this.Position = GetIndexOfPositionArray(square); // this will also set the coords
 
-            
+            this.Position = BoardState.GetIndexOfPositionArray(square);
+            this.SetPiece(pieceType);
+        }
+
+        public int Position
+        {
+            get
+            {
+                return this.position;
+            }
+
+            set
+            {
+                if (this.position != value) 
+                {
+                    this.position = value;
+                    this.coords.X = (position % 8) * 100;
+                    this.coords.Y = (position / 8) * 100;
+                }
+            }
+        }
+
+        public void SetSquare(string square)
+        {
+            this.square = square;
+        }
+
+        public string GetSquare()
+        {
+            return this.square;
+        }
+
+        public void SetPiece(PieceType piece)
+        {
+            this.type = piece;
 
             switch (type)
             {
@@ -101,43 +134,12 @@ namespace Chess
             }
         }
 
-        public int Position
-        {
+        public PieceType Type
+        { 
             get
             {
-                return this.position;
+                return this.type;
             }
-
-            set
-            {
-                if (this.position != value) 
-                {
-                    this.position = value;
-                    this.coords.X = (position % 8) * 100;
-                    this.coords.Y = (position / 8) * 100;
-                }
-            }
-        }
-
-        public void SetSquare(string square)
-        {
-            this.square = square;
-            this.Position = GetIndexOfPositionArray(square);
-        }
-
-        public string GetSquare()
-        {
-            return this.square;
-        }
-
-        public static int GetIndexOfPositionArray(string square)
-        {
-            if(square.Length != 2)
-            {
-                throw new ArgumentException(square + " must be a chessboard sqaure value.");
-            }
-
-            return ((int)('8' - square[1]) * 8) + (int)(square[0] - 'A');
         }
 
         

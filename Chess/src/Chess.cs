@@ -27,7 +27,6 @@ namespace Chess
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
             Globals.Content = this.Content;
 
             string pgn_path = "data/pgn/Garry Kasparov vs Deep-Blue Game-1.pgn";

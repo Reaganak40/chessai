@@ -19,7 +19,7 @@ namespace Chess
         private List<Piece> white_pieces;
         private List<Piece> black_pieces;
 
-        private BoardState board;
+        private BoardState boardState;
 
         private string first_move_square;
         private int square_index;
@@ -27,12 +27,17 @@ namespace Chess
         public Board()
         {
             Globals.PieceTexture = Globals.Content.Load<Texture2D>("pieces");
-
             this.texture = Globals.Content.Load<Texture2D>("chessboard");
-            this.loc = new Vector2(0,0);
+            this.loc = new Vector2(0, 0);
 
-            this.board = new BoardState();
+            this.NewGame(); // reset white and black pieces
+            this.boardState = new BoardState(this.white_pieces, this.black_pieces);
 
+            Debug.WriteLine(this.boardState.ToString());
+        }
+
+        public void NewGame()
+        {
             this.white_pieces = new List<Piece>();
             this.black_pieces = new List<Piece>();
 
@@ -65,26 +70,27 @@ namespace Chess
             {
                 this.black_pieces.Add(new Piece(PieceType.Black_Pawn, ((char)('A' + i)).ToString() + '7'));
             }
-
-            Debug.WriteLine(this.board.ToString());
         }
 
-        private void DrawPieces()
+        public void Move(string moveNotation)
         {
-            foreach(Piece piece in this.white_pieces)
-            {
-                piece.Draw();
-            }
+            this.boardState.Move(moveNotation);
+        }
 
-            foreach (Piece piece in this.black_pieces)
-            {
-                piece.Draw();
-            }
+        public void Move(string square1, string square2)
+        {
+            this.boardState.Move(square1, square2);
+        }
+
+        public void LoadGame(List<string[]> moveSet)
+        {
+            this.NewGame();
+            this.boardState = new BoardState(this.white_pieces, this.black_pieces);
         }
 
         private void MovePieces(string square1, string square2)
         {
-            if(this.board.WhiteTurn)
+            if(this.boardState.WhiteTurn)
             {
                 for (int i = 0; i < this.white_pieces.Count; i++)
                 {
@@ -105,7 +111,7 @@ namespace Chess
             }
             else
             {
-                this.board.Move(this.first_move_square, square);
+                this.boardState.Move(this.first_move_square, square);
                 this.square_index = 0;
             }
         }
@@ -122,7 +128,7 @@ namespace Chess
                         );
             Globals.DrawBatch.End();
             
-            this.DrawPieces();
+            this.boardState.DrawPieces();
         }
 
         public static string GetSquare(int row, int col)
