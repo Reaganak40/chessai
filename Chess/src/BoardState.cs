@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -45,6 +46,12 @@ namespace Chess
 
         public void Move(string moveNotation)
         {
+
+            moveNotation = moveNotation.Split("+")[0];
+            if (moveNotation.Equals("Rg8"))
+            {
+
+            }
             if(moveNotation.Equals("O-O"))
             {
                 // castle kings side
@@ -82,6 +89,7 @@ namespace Chess
                         {
                             string square1 = GetSquareFromIndex(board_index + (i * 8));
                             this.Move(square1, square2);
+                            break;
                         }
                     }
                 }
@@ -94,6 +102,7 @@ namespace Chess
                         {
                             string square1 = GetSquareFromIndex(board_index - (i * 8));
                             this.Move(square1, square2);
+                            break;
                         }
                     }
                 }
@@ -104,7 +113,9 @@ namespace Chess
 
                 if (parts.Count() == 2)
                 {
-                    if ((int)(parts[0][0]) >= 'a' && (int)(parts[0][0]) <= 'h')
+                    // A piece is being taken 
+
+                    if (parts[0][0] >= 'a' && parts[0][0] <= 'h')
                     {
                         int board_index = GetIndexOfPositionArray(parts[1]);
                         
@@ -140,14 +151,20 @@ namespace Chess
                                     piece_index = LocateIndexOfPiece(PieceType.Black_Queen);
                                 }
                                 break;
+                            case 'N':
+                                this.Move(parts[0] + parts[1]); // call like moving to that square and return
+                                return;
                             case 'B':
+                                this.Move(parts[0] + parts[1]); // call like moving to that square and return
+                                return;
+                            case 'R':
                                 this.Move(parts[0] + parts[1]); // call like moving to that square and return
                                 return;
                         }
                         string square1 = GetSquareFromIndex(piece_index);
                         square2 = parts[1];
 
-                       this.Move(square1, square2);
+                        this.Move(square1, square2);
                     }
                 }
                 else
@@ -155,9 +172,31 @@ namespace Chess
                     // Piece move (no take)
 
                     int piece_index = -1;
-                    square2 = moveNotation.Substring(1);
+
+                    int column_index = -1;
+                    if (moveNotation.Length == 4)
+                    {
+                        // specify column
+                        column_index = moveNotation[1] - 'a';
+                        square2 = moveNotation.Substring(2);
+                    }
+                    else
+                    {
+                        square2 = moveNotation.Substring(1);
+                    }
+
                     switch (moveNotation[0])
                     {
+                        case 'K':
+                            if (turn == 0)
+                            {
+                                piece_index = LocateIndexOfPiece(PieceType.White_King);
+                            }
+                            else
+                            {
+                                piece_index = LocateIndexOfPiece(PieceType.Black_King);
+                            }
+                            break;
                         case 'Q':
                             if (turn == 0)
                             {
@@ -186,6 +225,21 @@ namespace Chess
                             else
                             {
                                 piece_index = LocateIndexOfPiece(PieceType.Black_Bishop, can_see: GetIndexOfPositionArray(square2));
+                            }
+                            break;
+                        case 'R':
+                            int can_see_index = -1;
+                            if (moveNotation.Length == 3)
+                            {
+                                can_see_index = GetIndexOfPositionArray(square2);
+                            }
+                            if (turn == 0)
+                            {
+                                piece_index = LocateIndexOfPiece(PieceType.White_Rook, can_see : can_see_index, column : column_index);
+                            }
+                            else
+                            {
+                                piece_index = LocateIndexOfPiece(PieceType.Black_Rook, can_see: can_see_index, column: column_index);
                             }
                             break;
                     }
@@ -267,13 +321,24 @@ namespace Chess
             }
         }
 
-        private int LocateIndexOfPiece(PieceType target, int can_see = -1)
+        private int LocateIndexOfPiece(PieceType target, int can_see = -1, int column = -1)
         {
             for (int i = 0; i < 64; i++)
             {
                 if (this.configuration[i].Type == target)
                 {
-                    if (can_see < 0)
+                    if (column >= 0)
+                    {
+                        if ((i % 8) == column)
+                        {
+                            return i;
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+                    else if (can_see < 0)
                     {
                         return i;
                     }
@@ -357,6 +422,51 @@ namespace Chess
                         if (this.IsWhiteSquare(i) == this.IsWhiteSquare(can_see))
                         {
                             return i;
+                        }
+                    }
+                    else if (target == PieceType.White_Rook || target == PieceType.Black_Rook)
+                    {
+                        if ((i % 8) == (can_see % 8))
+                        {
+                            // if this vertically aligned rook has nothing in the way of the can_see index
+                            int min_y = Math.Min(i, can_see);
+                            int max_y = Math.Max(i, can_see);
+                            bool match = true;
+
+                            for(int middle_square = min_y + 8; middle_square < max_y; middle_square += 8)
+                            {
+                                if (this.configuration[middle_square].Type != PieceType.None)
+                                {
+                                    match = false;
+                                    break;
+                                }
+                            }
+
+                            if (match)
+                            {
+                                return i;
+                            }
+                        }
+                        else if ((i / 8) == (can_see / 8))
+                        {
+                            // if this vertically aligned rook has nothing in the way of the can_see index
+                            int min_x = Math.Min(i, can_see);
+                            int max_x = Math.Max(i, can_see);
+                            bool match = true;
+
+                            for (int middle_square = min_x + 1; middle_square < max_x; middle_square++)
+                            {
+                                if (this.configuration[middle_square].Type != PieceType.None)
+                                {
+                                    match = false;
+                                    break;
+                                }
+                            }
+
+                            if (match)
+                            {
+                                return i;
+                            }
                         }
                     }
                 }

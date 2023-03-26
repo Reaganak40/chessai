@@ -81,15 +81,18 @@ namespace Chess
             this.currentKeyState = Keyboard.GetState();
             if (oldKeyState.IsKeyUp(Keys.Right) && currentKeyState.IsKeyDown(Keys.Right))
             {
-                this.chessboard.Move(this.moves[this.move_index][this.turn]);
-                if (this.turn == 1)
+                if (!this.moves[this.move_index][this.turn].Equals("*"))
                 {
-                    move_index += 1;
-                    this.turn = 0;
-                }
-                else
-                {
-                    this.turn = 1;
+                    this.chessboard.Move(this.moves[this.move_index][this.turn]);
+                    if (this.turn == 1)
+                    {
+                        move_index += 1;
+                        this.turn = 0;
+                    }
+                    else
+                    {
+                        this.turn = 1;
+                    }
                 }
             }
             else if (oldKeyState.IsKeyUp(Keys.Left) && currentKeyState.IsKeyDown(Keys.Left))
