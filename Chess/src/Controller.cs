@@ -38,7 +38,7 @@ namespace Chess
 
             if (pathToPGN != null ) 
             {
-                this.pathToPGN = Directory.GetParent(Environment.CurrentDirectory).Parent.Parent.FullName + "/" + pathToPGN;
+                this.pathToPGN = Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.FullName + "/" + pathToPGN;
                 this.pathToPGN = this.pathToPGN.Replace("\\", "/");
                 Debug.WriteLine(this.pathToPGN);
             }
@@ -63,7 +63,7 @@ namespace Chess
                 }
                 else
                 {
-                    Globals.SetTitle("Game Replay - File Not Found");
+                   Globals.SetTitle("Game Replay - Not Found");
                 }
             }
         }
