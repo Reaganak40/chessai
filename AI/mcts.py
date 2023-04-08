@@ -70,6 +70,13 @@ class ChessNode():
                 print(f"{self.board[row * 8 + col]}".ljust(2), end = ' ')
             print("")
 
+    
+    def board_index_to_square(self, index : int):
+        col = chr(ord('a') + index % 8)
+        row = chr(ord('0') + 8 - int((index / 8)))
+        return str(col + row)
+
+
     def is_same_color(self, piece1 : int, piece2 : int):
         if piece1 <= PieceType.WP.value and piece1 > PieceType.E.value:
             if piece2 <= PieceType.WP.value and piece2 > PieceType.E.value:
@@ -112,9 +119,14 @@ class ChessNode():
                         else:
                             if return_check_bool:
                                 return True
-                            in_check = True                         # king is in check
-                            check_path.extend(piece_path)           # add path from enemy piece to king for check block
-                            valid_king_directions[3] = valid_king_directions[4] = False   # take away the horizontal plane from available chess moves
+                            in_check = True                                               # king is in check
+                            check_path.extend(piece_path)                                 # add path from enemy piece to king for check block
+                            
+                            if other_square == king_square - 1:
+                                valid_king_directions[4] = False # Make enemy square valid if the king can take it.
+                            else:
+                                valid_king_directions[3] = valid_king_directions[4] = False   # take away the horizontal plane from available chess moves
+
                         break
 
             other_square -= 1 # continue down path
@@ -144,7 +156,12 @@ class ChessNode():
                                 return True
                             in_check = True                         # king is in check
                             check_path.extend(piece_path)           # add path from enemy piece to king for check block
-                            valid_king_directions[3] = valid_king_directions[4] = False   # take away the horizontal plane from available chess moves
+                            
+                            if other_square == king_square + 1:
+                                valid_king_directions[3] = False # Make enemy square valid if the king can take it.
+                            else:
+                                valid_king_directions[3] = valid_king_directions[4] = False   # take away the horizontal plane from available chess moves
+
                         break
             
             other_square += 1 # continue down path
@@ -174,7 +191,11 @@ class ChessNode():
                                 return True
                             in_check = True                         # king is in check
                             check_path.extend(piece_path)           # add path from enemy piece to king for check block
-                            valid_king_directions[1] = valid_king_directions[6] = False   # take away the horizontal plane from available chess moves
+                            
+                            if other_square == king_square - 8:
+                                valid_king_directions[6] = False # Make enemy square valid if the king can take it.
+                            else:
+                                valid_king_directions[1] = valid_king_directions[6] = False   # take away the horizontal plane from available chess moves
                         break
             
             other_square -= 8 # continue down path
@@ -204,7 +225,11 @@ class ChessNode():
                                 return True
                             in_check = True                         # king is in check
                             check_path.extend(piece_path)           # add path from enemy piece to king for check block
-                            valid_king_directions[1] = valid_king_directions[6] = False   # take away the horizontal plane from available chess moves
+                            
+                            if other_square == king_square + 8:
+                                valid_king_directions[1] = False # Make enemy square valid if the king can take it.
+                            else:
+                                valid_king_directions[1] = valid_king_directions[6] = False   # take away the horizontal plane from available chess moves
                         break
             
             other_square += 8 # continue down path
@@ -234,7 +259,11 @@ class ChessNode():
                                 return True
                             in_check = True                         # king is in check
                             check_path.extend(piece_path)           # add path from enemy piece to king for check block
-                            valid_king_directions[0] = valid_king_directions[8] = False   # take away the horizontal plane from available chess moves
+                            
+                            if other_square == king_square - 9:
+                                valid_king_directions[7] = False # Make enemy square valid if the king can take it.
+                            else:
+                                valid_king_directions[0] = valid_king_directions[7] = False   # take away the horizontal plane from available chess moves
                         break
             
             other_square -= 9 # continue down path
@@ -264,7 +293,11 @@ class ChessNode():
                                 return True
                             in_check = True                         # king is in check
                             check_path.extend(piece_path)           # add path from enemy piece to king for check block
-                            valid_king_directions[2] = valid_king_directions[5] = False   # take away the horizontal plane from available chess moves
+                            
+                            if other_square == king_square - 7:
+                                valid_king_directions[5] = False # Make enemy square valid if the king can take it.
+                            else:
+                                valid_king_directions[2] = valid_king_directions[5] = False   # take away the horizontal plane from available chess moves
                         break
             
             other_square -= 7 # continue down path
@@ -294,7 +327,11 @@ class ChessNode():
                                 return True
                             in_check = True                         # king is in check
                             check_path.extend(piece_path)           # add path from enemy piece to king for check block
-                            valid_king_directions[2] = valid_king_directions[5] = False   # take away the horizontal plane from available chess moves
+                            
+                            if other_square == king_square + 7:
+                                valid_king_directions[2] = False # Make enemy square valid if the king can take it.
+                            else:
+                                valid_king_directions[2] = valid_king_directions[5] = False   # take away the horizontal plane from available chess moves
                         break
             
             other_square += 7 # continue down path
@@ -324,17 +361,25 @@ class ChessNode():
                                 return True
                             in_check = True                         # king is in check
                             check_path.extend(piece_path)           # add path from enemy piece to king for check block
-                            valid_king_directions[0] = valid_king_directions[8] = False   # take away the horizontal plane from available chess moves
+                            
+                            if other_square == king_square + 9:
+                                valid_king_directions[0] = False # Make enemy square valid if the king can take it.
+                            else:
+                                valid_king_directions[0] = valid_king_directions[8] = False   # take away the horizontal plane from available chess moves
                         break
             
             other_square += 9 # continue down path
 
+        if return_check_bool:
+            return in_check
+    
         return in_check, check_path, pinned_squares, valid_king_directions
         
 
-    def check_king_moves(self):
+    def get_king_moves(self):
         king_moves = []
 
+        king_square = -1
         for index, piece in enumerate(self.board):
             if self.move == Turn.White.value:
                 if piece == PieceType.WK.value:
@@ -346,19 +391,24 @@ class ChessNode():
                     break
             else:
                 raise Exception(self.move, "does not correlate with black or white's turn.")
+        
+        if king_square == -1:
+            err_msg = "King for {} not found on board.".format('white' if self.move == Turn.White.value else 'black')
+            raise Exception(err_msg)
 
         in_check, check_path, pinned_squares, valid_king_directions = self.get_checks_and_pins(king_square)
         double_check = False
 
-        # check double check
-        # check from diagonal and vertical/horizontal
-        if ((not valid_king_directions[0] or not valid_king_directions[2]) 
-            and  (not valid_king_directions[1] or not valid_king_directions[3])):
-            double_check = True
-        
-        # check from double diagonal 
-        elif (not valid_king_directions[0] and not valid_king_directions[2]) or (not valid_king_directions[1] and not valid_king_directions[3]):
-            double_check = True
+        if in_check:
+            # check double check
+            # check from diagonal and vertical/horizontal
+            if ((not valid_king_directions[0] or not valid_king_directions[2]) 
+                and  (not valid_king_directions[1] or not valid_king_directions[3])):
+                double_check = True
+            
+            # check from double diagonal 
+            elif (not valid_king_directions[0] and not valid_king_directions[2]) or (not valid_king_directions[1] and not valid_king_directions[3]):
+                double_check = True
         
         
         for index, safe in enumerate(valid_king_directions):
@@ -371,58 +421,58 @@ class ChessNode():
                 if index == 0 and (other_square >= 0 and (other_square % 8) < 7) and not self.is_same_color(king_square, other_square):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
-                        continue
+                    continue
                 
                 # up
                 other_square = king_square - 8
                 if index == 1 and (other_square >= 0) and not self.is_same_color(king_square, other_square):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
-                        continue
+                    continue
                 
                 # upper-right
                 other_square = king_square - 7
                 if index == 2 and (other_square >= 0 and (other_square % 8) > 0) and not self.is_same_color(king_square, other_square):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
-                        continue
+                    continue
                 
                 # left
                 other_square = king_square - 1
                 if index == 3 and (other_square >= 0 and (other_square % 8) < 7) and not self.is_same_color(king_square, other_square):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
-                        continue
+                    continue
                 
                 # right
                 other_square = king_square + 1
                 if index == 4 and (other_square < 64 and (other_square % 8) > 0) and not self.is_same_color(king_square, other_square):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
-                        continue
+                    continue
                 
                 # lower-left
                 other_square = king_square + 7
                 if index == 5 and (other_square < 64 and (other_square % 8) < 7) and not self.is_same_color(king_square, other_square):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
-                        continue
+                    continue
                 
                 # bottom
                 other_square = king_square + 8
                 if index == 6 and (other_square < 64) and not self.is_same_color(king_square, other_square):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
-                        continue
+                    continue
 
                 # lower-right
                 other_square = king_square + 9
-                if index == 6 and (other_square < 64 and (other_square % 8) > 0) and not self.is_same_color(king_square, other_square):
+                if index == 7 and (other_square < 64 and (other_square % 8) > 0) and not self.is_same_color(king_square, other_square):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
-                        continue
+                    continue
             
-            return king_moves, in_check, check_path, pinned_squares
+        return king_moves, in_check, double_check, check_path, pinned_squares
 
 
     def check_axis_vertical_horizontal(self, move_list : List, current_square : int, piece : int):
@@ -614,18 +664,29 @@ class ChessNode():
             if self.board[current_square - 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 9]):
                  move_list.append((current_square, current_square - 9))
 
-
-    def get_legal_moves(self, current_move=None):
+    def get_legal_moves(self, current_move=None, chess_syntax=False):
 
         if current_move is None:
             current_move = self.move
         
-        legal_moves, in_check, check_path, pinned_squares = self.check_king_moves()
+        legal_moves, in_check, double_check, check_path, pinned_squares = self.get_king_moves()
 
+        # if double check, only king moves
+        if double_check:
+            if chess_syntax:
+                return [(self.board_index_to_square(x), self.board_index_to_square(y)) for x, y in legal_moves]
+            return legal_moves
+        
+        if not in_check:
+            search_squares = enumerate(self.board)
+        else:
+            search_squares = [(square, self.board[square]) for square in check_path]
 
-
-        for current_square, piece in enumerate(self.board):
+        for current_square, piece in search_squares:
             
+            if current_square in pinned_squares:
+                continue
+
             # White to Move
             if current_move == Turn.White.value:
 
@@ -671,20 +732,24 @@ class ChessNode():
                 #* CURRENT PIECE: PAWN
                 if piece == PieceType.BP.value:
                     self.check_pawn_moves(legal_moves, current_square, piece)
+        
+        if chess_syntax:
+            return [(self.board_index_to_square(x), self.board_index_to_square(y)) for x, y in legal_moves]
 
         return legal_moves
 
                 
 
 test_board = [PieceType.E.value] * 64
-test_board[36] = PieceType.WP.value
-test_board[28] = PieceType.BP.value
-test_board[27] = PieceType.BK.value
+test_board[36] = PieceType.WK.value
+test_board[22] = PieceType.BB.value
+test_board[45] = PieceType.BQ.value
 
 
 
-node = ChessNode()
+
+node = ChessNode(import_board=test_board)
 node.print_board()
-moves = node.get_legal_moves()
+moves = node.get_legal_moves(chess_syntax=True)
 print("\nPossible Moves:",len(moves))
 print("\n{}".format(moves))
