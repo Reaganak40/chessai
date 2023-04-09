@@ -475,10 +475,14 @@ class ChessNode():
         return king_moves, in_check, double_check, check_path, pinned_squares
 
 
-    def check_axis_vertical_horizontal(self, move_list : List, current_square : int, piece : int):
+    def check_axis_vertical_horizontal(self, move_list : List, current_square : int, piece : int, check_path : List[int]):
         # check left
         other_square = current_square - 1
         while other_square >= 0 and (other_square % 8) < 7:
+            if len(check_path) > 0 and other_square not in check_path:
+                other_square -= 1
+                continue
+            
             if self.board[other_square] == PieceType.E.value:
                 move_list.append((current_square, other_square))
                 other_square -= 1
@@ -491,6 +495,10 @@ class ChessNode():
         # check right
         other_square = current_square + 1
         while other_square < 64 and (other_square % 8) > 0:
+            if len(check_path) > 0 and other_square not in check_path:
+                other_square += 1
+                continue
+
             if self.board[other_square] == PieceType.E.value:
                 move_list.append((current_square, other_square))
                 other_square += 1
@@ -503,6 +511,10 @@ class ChessNode():
         # check up
         other_square = current_square - 8
         while other_square >= 0:
+            if len(check_path) > 0 and other_square not in check_path:
+                other_square -= 8
+                continue
+            
             if self.board[other_square] == PieceType.E.value:
                 move_list.append((current_square, other_square))
                 other_square -= 8
@@ -515,6 +527,9 @@ class ChessNode():
         # check down
         other_square = current_square + 8
         while other_square < 64:
+            if len(check_path) > 0 and other_square not in check_path:
+                other_square += 8
+                continue
             if self.board[other_square] == PieceType.E.value:
                 move_list.append((current_square, other_square))
                 other_square += 8
@@ -524,10 +539,14 @@ class ChessNode():
             else:
                 break
 
-    def check_axis_diagonal(self,  move_list : List, current_square : int, piece : int):
+    def check_axis_diagonal(self,  move_list : List, current_square : int, piece : int, check_path : List[int]):
         # check upper-left
         other_square = current_square - 9
         while other_square >= 0 and (other_square % 8) < 7:
+            if len(check_path) > 0 and other_square not in check_path:
+                other_square -= 9
+                continue
+
             if self.board[other_square] == PieceType.E.value:
                 move_list.append((current_square, other_square))
                 other_square -= 9
@@ -540,6 +559,10 @@ class ChessNode():
         # check upper-right
         other_square = current_square - 7
         while other_square >= 0 and (other_square % 8) > 0:
+            if len(check_path) > 0 and other_square not in check_path:
+                other_square -= 7
+                continue
+
             if self.board[other_square] == PieceType.E.value:
                 move_list.append((current_square, other_square))
                 other_square -= 7
@@ -552,6 +575,10 @@ class ChessNode():
         # check lower-left
         other_square = current_square + 7
         while other_square < 64 and (other_square % 8) < 7:
+            if len(check_path) > 0 and other_square not in check_path:
+                other_square += 7
+                continue
+
             if self.board[other_square] == PieceType.E.value:
                 move_list.append((current_square, other_square))
                 other_square += 7
@@ -564,6 +591,10 @@ class ChessNode():
         # check lower-right
         other_square = current_square + 9
         while other_square < 64 and (other_square % 8) > 0:
+            if len(check_path) > 0 and other_square not in check_path:
+                other_square += 9
+                continue
+
             if self.board[other_square] == PieceType.E.value:
                 move_list.append((current_square, other_square))
                 other_square += 9
@@ -573,96 +604,115 @@ class ChessNode():
             else:
                 break
 
-    def check_knight_moves(self,  move_list : List, current_square : int, piece : int):
+    def check_knight_moves(self,  move_list : List, current_square : int, piece : int, check_path : List[int]):
         # 2-up, 1-left
         other_square = current_square - 17
         if other_square >= 0 and (other_square % 8) < 7:
-            if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
-                move_list.append((current_square, other_square))
+            if len(check_path) == 0 or other_square in check_path:
+                if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
+                    move_list.append((current_square, other_square))
 
         # 1-up, 2-left
         other_square = current_square - 10
         if other_square >= 0 and (other_square % 8) < 6:
-            if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
-                move_list.append((current_square, other_square))
+            if len(check_path) == 0 or other_square in check_path:
+                if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
+                    move_list.append((current_square, other_square))
         
         # 1-down, 2-left
         other_square = current_square + 6
         if other_square < 64 and (other_square % 8) < 6:
-            if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
-                move_list.append((current_square, other_square))
-        
+            if len(check_path) == 0 or other_square in check_path:
+                if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
+                    move_list.append((current_square, other_square))
+            
         # 2-down, 1-left
         other_square = current_square + 15
         if other_square < 64 and (other_square % 8) < 7:
-            if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
-                move_list.append((current_square, other_square))
-        
+            if len(check_path) == 0 or other_square in check_path:
+                if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
+                    move_list.append((current_square, other_square))
+            
         # 2-up, 1-right
         other_square = current_square - 15
         if other_square >= 0 and (other_square % 8) > 0:
-            if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
-                move_list.append((current_square, other_square))
-        
+            if len(check_path) == 0 or other_square in check_path:
+                if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
+                    move_list.append((current_square, other_square))
+            
         # 1-up, 2-right
         other_square = current_square - 6
         if other_square >= 0 and (other_square % 8) > 1:
-            if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
-                move_list.append((current_square, other_square))
+            if len(check_path) == 0 or other_square in check_path:
+                if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
+                    move_list.append((current_square, other_square))
 
         # 1-down, 2-right
         other_square = current_square + 10
         if other_square < 64 and (other_square % 8) > 1:
-            if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
-                move_list.append((current_square, other_square))
-        
+            if len(check_path) == 0 or other_square in check_path:
+                if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
+                    move_list.append((current_square, other_square))
+            
         # 2-down, 1-right
         other_square = current_square + 17
         if other_square < 64 and (other_square % 8) > 0:
-            if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
-                move_list.append((current_square, other_square))
-    
-    def check_pawn_moves(self,  move_list : List, current_square : int, piece : int):
+            if len(check_path) == 0 or other_square in check_path:
+                if self.board[other_square] == PieceType.E.value or not self.is_same_color(piece, self.board[other_square]):
+                    move_list.append((current_square, other_square))
+        
+    def check_pawn_moves(self,  move_list : List, current_square : int, piece : int, check_path : List[int]):
         
         # check if black pawn
         if piece == PieceType.BP.value:
             if int(current_square / 8) == 1:
                 # black pawn can make two forward moves (first move)
                 if self.board[current_square + 8] == PieceType.E.value:
-                    move_list.append((current_square, current_square + 8))
+                    if len(check_path) == 0 or (current_square + 8 in check_path):
+                        move_list.append((current_square, current_square + 8))
+                    
                     if self.board[current_square + 16] == PieceType.E.value:
-                        move_list.append((current_square, current_square + 16))
+                            move_list.append((current_square, current_square + 16))
             else:
                 # black pawn can only move forward one square
                 if self.board[current_square + 8] == PieceType.E.value:
-                    move_list.append((current_square, current_square + 8))
+                    if len(check_path) == 0 or (current_square + 8 in check_path):
+                        move_list.append((current_square, current_square + 8))
 
             # check if can take at diagonal
             if self.board[current_square + 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 7]):
-                 move_list.append((current_square, current_square + 7))
+                if len(check_path) == 0 or (current_square + 7 in check_path):
+                    move_list.append((current_square, current_square + 7))
             
             if self.board[current_square + 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 9]):
-                 move_list.append((current_square, current_square + 9))
+                if len(check_path) == 0 or (current_square + 9 in check_path):
+                    move_list.append((current_square, current_square + 9))
 
         # check if white pawn
         elif piece == PieceType.WP.value:
             if int(current_square / 8) == 6:
                 # black pawn can make two forward moves (first move)
                 if self.board[current_square - 8] == PieceType.E.value:
-                    move_list.append((current_square, current_square - 8))
+                    if len(check_path) == 0 or (current_square - 8 in check_path):
+                        move_list.append((current_square, current_square - 8))
+                    
                     if self.board[current_square - 16] == PieceType.E.value:
-                        move_list.append((current_square, current_square - 16))
+                        if len(check_path) == 0 or (current_square - 16 in check_path):
+                            move_list.append((current_square, current_square - 16))
             else:
                 # black pawn can only move forward one square
                 if self.board[current_square - 8] == PieceType.E.value:
-                    move_list.append((current_square, current_square - 8))
+                    if len(check_path) == 0 or (current_square - 8 in check_path):
+                        move_list.append((current_square, current_square - 8))
 
             # check if can take at diagonal
             if self.board[current_square - 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 7]):
-                 move_list.append((current_square, current_square - 7))
+                if len(check_path) == 0 or (current_square - 7 in check_path):
+                    move_list.append((current_square, current_square - 7))
             
             if self.board[current_square - 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 9]):
-                 move_list.append((current_square, current_square - 9))
+                if len(check_path) == 0 or (current_square - 9 in check_path):
+                    move_list.append((current_square, current_square - 9))
 
     def get_legal_moves(self, current_move=None, chess_syntax=False):
 
@@ -677,12 +727,8 @@ class ChessNode():
                 return [(self.board_index_to_square(x), self.board_index_to_square(y)) for x, y in legal_moves]
             return legal_moves
         
-        if not in_check:
-            search_squares = enumerate(self.board)
-        else:
-            search_squares = [(square, self.board[square]) for square in check_path]
-
-        for current_square, piece in search_squares:
+        # check the rest of the pieces
+        for current_square, piece in enumerate(self.board):
             
             if current_square in pinned_squares:
                 continue
@@ -692,46 +738,46 @@ class ChessNode():
 
                 #* CURRENT PIECE: ROOK
                 if piece == PieceType.WR.value:
-                    self.check_axis_vertical_horizontal(legal_moves, current_square, piece)
+                    self.check_axis_vertical_horizontal(legal_moves, current_square, piece, check_path)
                 
                 #* CURRENT PIECE: BISHOP
                 if piece == PieceType.WB.value:
-                    self.check_axis_diagonal(legal_moves, current_square, piece)
+                    self.check_axis_diagonal(legal_moves, current_square, piece, check_path)
                 
                 #* CURRENT PIECE: QUEEN
                 if piece == PieceType.WQ.value:
-                    self.check_axis_vertical_horizontal(legal_moves, current_square, piece)
-                    self.check_axis_diagonal(legal_moves, current_square, piece)
+                    self.check_axis_vertical_horizontal(legal_moves, current_square, piece, check_path)
+                    self.check_axis_diagonal(legal_moves, current_square, piece, check_path)
                 
                 #* CURRENT PIECE: KNIGHT
                 if piece == PieceType.WN.value:
-                    self.check_knight_moves(legal_moves, current_square, piece)
+                    self.check_knight_moves(legal_moves, current_square, piece, check_path)
                 
                 #* CURRENT PIECE: PAWN
                 if piece == PieceType.WP.value:
-                    self.check_pawn_moves(legal_moves, current_square, piece)
+                    self.check_pawn_moves(legal_moves, current_square, piece, check_path)
             # Black to Move
             elif current_move == Turn.Black.value:
                 #* CURRENT PIECE: ROOK
                 if piece == PieceType.BR.value:
-                    self.check_axis_vertical_horizontal(legal_moves, current_square, piece)
+                    self.check_axis_vertical_horizontal(legal_moves, current_square, piece, check_path)
                 
                 #* CURRENT PIECE: BISHOP
                 if piece == PieceType.BB.value:
-                    self.check_axis_diagonal(legal_moves, current_square, piece)
+                    self.check_axis_diagonal(legal_moves, current_square, piece, check_path)
                 
                 #* CURRENT PIECE: QUEEN
                 if piece == PieceType.BQ.value:
-                    self.check_axis_vertical_horizontal(legal_moves, current_square, piece)
-                    self.check_axis_diagonal(legal_moves, current_square, piece)
+                    self.check_axis_vertical_horizontal(legal_moves, current_square, piece, check_path)
+                    self.check_axis_diagonal(legal_moves, current_square, piece, check_path)
                 
                 #* CURRENT PIECE: KNIGHT
                 if piece == PieceType.BN.value:
-                    self.check_knight_moves(legal_moves, current_square, piece)
+                    self.check_knight_moves(legal_moves, current_square, piece, check_path)
                 
                 #* CURRENT PIECE: PAWN
                 if piece == PieceType.BP.value:
-                    self.check_pawn_moves(legal_moves, current_square, piece)
+                    self.check_pawn_moves(legal_moves, current_square, piece, check_path)
         
         if chess_syntax:
             return [(self.board_index_to_square(x), self.board_index_to_square(y)) for x, y in legal_moves]
