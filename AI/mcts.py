@@ -1,6 +1,11 @@
 
 from enum import Enum
 from typing import List
+
+from colorama import just_fix_windows_console
+from termcolor import colored
+import sys
+
  
 class PieceType(Enum):
     """ Contains enumerator class definitions to identify pieces in a chess grid
@@ -65,10 +70,47 @@ class ChessNode():
 
     
     def print_board(self):
+        print("______________________")
         for row in range(8):
+            print("|", end='')
             for col in range(8):
-                print(f"{self.board[row * 8 + col]}".ljust(2), end = ' ')
+                piece = self.board[row * 8 + col]
+                # no piece
+                if piece == PieceType.E.value:
+                    piece_str = colored('\u2654', 'black')
+                # white piece -- blue
+                elif piece == PieceType.WK.value:
+                    piece_str = colored("\u2654", 'blue')
+                elif piece == PieceType.WQ.value:
+                    piece_str = colored("\u2655", 'blue')
+                elif piece == PieceType.WR.value:
+                    piece_str = colored("\u2656", 'blue')
+                elif piece == PieceType.WN.value:
+                    piece_str = colored("\u2658", 'blue')
+                elif piece == PieceType.WB.value:
+                    piece_str = colored("\u2657", 'blue')
+                elif piece == PieceType.WP.value:
+                    piece_str = colored("\u2659", 'blue')
+                
+                # black piece -- red
+                elif piece == PieceType.BK.value:
+                    piece_str = colored("\u2654", 'red')
+                elif piece == PieceType.BQ.value:
+                    piece_str = colored("\u2655", 'red')
+                elif piece == PieceType.BR.value:
+                    piece_str = colored("\u2656", 'red')
+                elif piece == PieceType.BN.value:
+                    piece_str = colored("\u2658", 'red')
+                elif piece == PieceType.BB.value:
+                    piece_str = colored("\u2657", 'red')
+                elif piece == PieceType.BP.value:
+                    piece_str = colored("\u2659", 'red')
+                
+                print(piece_str, end = '|')
             print("")
+        for _ in range(22):
+            print("\u203E", end='')
+        print("")
 
     
     def board_index_to_square(self, index : int):
@@ -369,10 +411,182 @@ class ChessNode():
                         break
             
             other_square += 9 # continue down path
-
+        
         if return_check_bool:
             return in_check
-    
+        
+        # restrict king when on edge
+        if king_square % 8 == 0:
+            valid_king_directions[0] = valid_king_directions[3] = valid_king_directions[5] = False
+        
+        if king_square % 8 == 0:
+            valid_king_directions[2] = valid_king_directions[4] = valid_king_directions[7] = False
+
+        if int(king_square / 8) == 0:
+            valid_king_directions[0] = valid_king_directions[1] = valid_king_directions[2] = False
+        
+        if int(king_square / 8) == 7:
+            valid_king_directions[5] = valid_king_directions[6] = valid_king_directions[7] = False
+
+
+        other_king_val = PieceType.BK.value if self.move == Turn.White.value else PieceType.WK.value
+        for index, valid in enumerate(valid_king_directions):
+
+            if(valid):
+
+                if index == 0: #* upper-left from king square
+                    other_square = king_square - 9
+                    # up
+                    if (other_square - 8) >= 0 and self.board[other_square - 8] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # upper-left
+                    if (other_square - 9) >= 0 and ((other_square - 9) % 8) < 7 and self.board[other_square - 9] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # upper-right
+                    if (other_square - 7) >= 0 and ((other_square - 7) % 8) > 0 and self.board[other_square - 7] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # left
+                    if (other_square - 1) >= 0 and ((other_square - 1) % 8) < 7 and self.board[other_square - 1] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # lower-left
+                    if (other_square + 7) < 64 and ((other_square + 7) % 8) < 7 and self.board[other_square + 7] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    continue
+                if index == 1: #* up from king square
+                    other_square = king_square - 8
+                    # up
+                    if (other_square - 8) >= 0 and self.board[other_square - 8] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # upper-left
+                    if (other_square - 9) >= 0 and ((other_square - 9) % 8) < 7 and self.board[other_square - 9] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # upper-right
+                    if (other_square - 7) >= 0 and ((other_square - 7) % 8) > 0 and self.board[other_square - 7] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    continue
+                if index == 2: #* upper-right from king square
+                    other_square = king_square - 7
+                    # up
+                    if (other_square - 8) >= 0 and self.board[other_square - 8] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # upper-left
+                    if (other_square - 9) >= 0 and ((other_square - 9) % 8) < 7 and self.board[other_square - 9] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # upper-right
+                    if (other_square - 7) >= 0 and ((other_square - 7) % 8) > 0 and self.board[other_square - 7] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # right
+                    if (other_square + 1) < 64 and ((other_square + 1) % 8) > 0 and self.board[other_square + 1] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # lower-right
+                    if (other_square + 9) < 64 and ((other_square + 9) % 8) > 0 and self.board[other_square + 9] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    continue
+                if index == 3: #* left from king square
+                    other_square = king_square - 1
+                    # upper-left
+                    if (other_square - 9) >= 0 and ((other_square - 9) % 8) < 7 and self.board[other_square - 9] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # left
+                    if (other_square - 1) >= 0 and ((other_square - 1) % 8) < 7 and self.board[other_square - 1] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # lower-left
+                    if (other_square + 7) < 64 and ((other_square + 7) % 8) < 7 and self.board[other_square + 7] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    continue
+                if index == 4: #* right from king square
+                    other_square = king_square + 1
+                    # upper-right
+                    if (other_square - 7) >= 0 and ((other_square - 7) % 8) > 0 and self.board[other_square - 7] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # right
+                    if (other_square + 1) < 64 and ((other_square + 1) % 8) > 0 and self.board[other_square + 1] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # lower-right
+                    if (other_square + 9) < 64 and ((other_square + 9) % 8) > 0 and self.board[other_square + 9] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    continue
+                if index == 5: #* lower-left from king square
+                    other_square = king_square + 7
+                    # upper-left
+                    if (other_square - 9) >= 0 and ((other_square - 9) % 8) < 7 and self.board[other_square - 9] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # left
+                    if (other_square - 1) >= 0 and ((other_square - 1) % 8) < 7 and self.board[other_square - 1] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # lower-left
+                    if (other_square + 7) < 64 and ((other_square + 7) % 8) < 7 and self.board[other_square + 7] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # down
+                    if (other_square + 8) < 64 and self.board[other_square + 8] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # lower-right
+                    if (other_square + 9) < 64 and ((other_square + 9) % 8) > 0 and self.board[other_square + 9] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    continue
+                if index == 6: #* down from king square
+                    other_square = king_square + 8
+                    # lower-left
+                    if (other_square + 7) < 64 and ((other_square + 7) % 8) < 7 and self.board[other_square + 7] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # down
+                    if (other_square + 8) < 64 and self.board[other_square + 8] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # lower-right
+                    if (other_square + 9) < 64 and ((other_square + 9) % 8) > 0 and self.board[other_square + 9] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    continue
+                if index == 7: #* lower-right from king square
+                    other_square = king_square + 9
+                    # lower-left
+                    if (other_square + 7) < 64 and ((other_square + 7) % 8) < 7 and self.board[other_square + 7] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # down
+                    if (other_square + 8) < 64 and self.board[other_square + 8] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # lower-right
+                    if (other_square + 9) < 64 and ((other_square + 9) % 8) > 0 and self.board[other_square + 9] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # upper-right
+                    if (other_square - 7) >= 0 and ((other_square - 7) % 8) > 0 and self.board[other_square - 7] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    # right
+                    if (other_square + 1) < 64 and ((other_square + 1) % 8) > 0 and self.board[other_square + 1] == other_king_val:
+                        valid_king_directions[index] = False
+                        continue
+                    continue
+
         return in_check, check_path, pinned_squares, valid_king_directions
         
 
@@ -418,56 +632,56 @@ class ChessNode():
                 
                 # upper-left
                 other_square = king_square - 9
-                if index == 0 and (other_square >= 0 and (other_square % 8) < 7) and not self.is_same_color(king_square, other_square):
+                if index == 0 and (other_square >= 0 and (other_square % 8) < 7) and not self.is_same_color(self.board[king_square], self.board[other_square]):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
                     continue
                 
                 # up
                 other_square = king_square - 8
-                if index == 1 and (other_square >= 0) and not self.is_same_color(king_square, other_square):
+                if index == 1 and (other_square >= 0) and not self.is_same_color(self.board[king_square], self.board[other_square]):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
                     continue
                 
                 # upper-right
                 other_square = king_square - 7
-                if index == 2 and (other_square >= 0 and (other_square % 8) > 0) and not self.is_same_color(king_square, other_square):
+                if index == 2 and (other_square >= 0 and (other_square % 8) > 0) and not self.is_same_color(self.board[king_square], self.board[other_square]):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
                     continue
                 
                 # left
                 other_square = king_square - 1
-                if index == 3 and (other_square >= 0 and (other_square % 8) < 7) and not self.is_same_color(king_square, other_square):
+                if index == 3 and (other_square >= 0 and (other_square % 8) < 7) and not self.is_same_color(self.board[king_square], self.board[other_square]):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
                     continue
                 
                 # right
                 other_square = king_square + 1
-                if index == 4 and (other_square < 64 and (other_square % 8) > 0) and not self.is_same_color(king_square, other_square):
+                if index == 4 and (other_square < 64 and (other_square % 8) > 0) and not self.is_same_color(self.board[king_square], self.board[other_square]):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
                     continue
                 
                 # lower-left
                 other_square = king_square + 7
-                if index == 5 and (other_square < 64 and (other_square % 8) < 7) and not self.is_same_color(king_square, other_square):
+                if index == 5 and (other_square < 64 and (other_square % 8) < 7) and not self.is_same_color(self.board[king_square], self.board[other_square]):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
                     continue
                 
                 # bottom
                 other_square = king_square + 8
-                if index == 6 and (other_square < 64) and not self.is_same_color(king_square, other_square):
+                if index == 6 and (other_square < 64) and not self.is_same_color(self.board[king_square], self.board[other_square]):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
                     continue
 
                 # lower-right
                 other_square = king_square + 9
-                if index == 7 and (other_square < 64 and (other_square % 8) > 0) and not self.is_same_color(king_square, other_square):
+                if index == 7 and (other_square < 64 and (other_square % 8) > 0) and not self.is_same_color(self.board[king_square], self.board[other_square]):
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
                     continue
@@ -479,6 +693,8 @@ class ChessNode():
         # check left
         other_square = current_square - 1
         while other_square >= 0 and (other_square % 8) < 7:
+            if self.is_same_color(piece, self.board[other_square]):
+                break
             if len(check_path) > 0 and other_square not in check_path:
                 other_square -= 1
                 continue
@@ -495,6 +711,8 @@ class ChessNode():
         # check right
         other_square = current_square + 1
         while other_square < 64 and (other_square % 8) > 0:
+            if self.is_same_color(piece, self.board[other_square]):
+                break
             if len(check_path) > 0 and other_square not in check_path:
                 other_square += 1
                 continue
@@ -511,6 +729,8 @@ class ChessNode():
         # check up
         other_square = current_square - 8
         while other_square >= 0:
+            if self.is_same_color(piece, self.board[other_square]):
+                break
             if len(check_path) > 0 and other_square not in check_path:
                 other_square -= 8
                 continue
@@ -527,6 +747,8 @@ class ChessNode():
         # check down
         other_square = current_square + 8
         while other_square < 64:
+            if self.is_same_color(piece, self.board[other_square]):
+                break
             if len(check_path) > 0 and other_square not in check_path:
                 other_square += 8
                 continue
@@ -543,6 +765,8 @@ class ChessNode():
         # check upper-left
         other_square = current_square - 9
         while other_square >= 0 and (other_square % 8) < 7:
+            if self.is_same_color(piece, self.board[other_square]):
+                break
             if len(check_path) > 0 and other_square not in check_path:
                 other_square -= 9
                 continue
@@ -559,6 +783,8 @@ class ChessNode():
         # check upper-right
         other_square = current_square - 7
         while other_square >= 0 and (other_square % 8) > 0:
+            if self.is_same_color(piece, self.board[other_square]):
+                break
             if len(check_path) > 0 and other_square not in check_path:
                 other_square -= 7
                 continue
@@ -575,6 +801,8 @@ class ChessNode():
         # check lower-left
         other_square = current_square + 7
         while other_square < 64 and (other_square % 8) < 7:
+            if self.is_same_color(piece, self.board[other_square]):
+                break
             if len(check_path) > 0 and other_square not in check_path:
                 other_square += 7
                 continue
@@ -591,6 +819,8 @@ class ChessNode():
         # check lower-right
         other_square = current_square + 9
         while other_square < 64 and (other_square % 8) > 0:
+            if self.is_same_color(piece, self.board[other_square]):
+                break
             if len(check_path) > 0 and other_square not in check_path:
                 other_square += 9
                 continue
@@ -680,11 +910,11 @@ class ChessNode():
                         move_list.append((current_square, current_square + 8))
 
             # check if can take at diagonal
-            if self.board[current_square + 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 7]):
+            if self.board[current_square + 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 7]) and not current_square % 8 < 7:
                 if len(check_path) == 0 or (current_square + 7 in check_path):
                     move_list.append((current_square, current_square + 7))
             
-            if self.board[current_square + 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 9]):
+            if self.board[current_square + 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 9]) and not current_square % 8 > 0:
                 if len(check_path) == 0 or (current_square + 9 in check_path):
                     move_list.append((current_square, current_square + 9))
 
@@ -706,11 +936,11 @@ class ChessNode():
                         move_list.append((current_square, current_square - 8))
 
             # check if can take at diagonal
-            if self.board[current_square - 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 7]):
+            if self.board[current_square - 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 7]) and not current_square % 8 > 0:
                 if len(check_path) == 0 or (current_square - 7 in check_path):
                     move_list.append((current_square, current_square - 7))
             
-            if self.board[current_square - 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 9]):
+            if self.board[current_square - 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 9]) and not current_square % 8 < 7:
                 if len(check_path) == 0 or (current_square - 9 in check_path):
                     move_list.append((current_square, current_square - 9))
 
@@ -787,9 +1017,16 @@ class ChessNode():
                 
 
 test_board = [PieceType.E.value] * 64
-test_board[36] = PieceType.WK.value
-test_board[22] = PieceType.BB.value
+test_board[28] = PieceType.WK.value
+test_board[9] = PieceType.WB.value
+
+
+test_board[54] = PieceType.BK.value
 test_board[45] = PieceType.BQ.value
+
+
+
+
 
 
 
