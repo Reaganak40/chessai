@@ -34,42 +34,53 @@ class ChessNode():
     """ Chess Node containing all chess data for a given configuration
     """
 
-    def __init__(self, import_board : List[int] = None):
+    def __init__(self, import_board : List[int] = None, last_move : tuple = None):
         self.children : dict[tuple, ChessNode] = {}
         self.move = Turn.White.value
         self.white_can_castle = True
         self.black_can_castle = True
+
+        self.last_move = last_move
         
         if import_board is None:
-            self.board = [PieceType.E.value] * 64
-
-            # Setup the chess pieces according to a new game
-            self.board[0] = PieceType.BR.value
-            self.board[7] = PieceType.BR.value
-            self.board[1] = PieceType.BN.value
-            self.board[6] = PieceType.BN.value
-            self.board[2] = PieceType.BB.value
-            self.board[5] = PieceType.BB.value
-            self.board[3] = PieceType.BQ.value
-            self.board[4] = PieceType.BK.value
-
-            for index in range(8, 16):
-                self.board[index] = PieceType.BP.value
-            for index in range(48, 56):
-                self.board[index] = PieceType.WP.value
-            
-            self.board[56] = PieceType.WR.value
-            self.board[63] = PieceType.WR.value
-            self.board[57] = PieceType.WN.value
-            self.board[62] = PieceType.WN.value
-            self.board[58] = PieceType.WB.value
-            self.board[61] = PieceType.WB.value
-            self.board[59] = PieceType.WQ.value
-            self.board[60] = PieceType.WK.value
+            self.board = ChessNode.get_starting_board()
         else:
             self.board = import_board[:]
+    
+    def get_starting_board():
+        board = [PieceType.E.value] * 64
+
+        # Setup the chess pieces according to a new game
+        board[0] = PieceType.BR.value
+        board[7] = PieceType.BR.value
+        board[1] = PieceType.BN.value
+        board[6] = PieceType.BN.value
+        board[2] = PieceType.BB.value
+        board[5] = PieceType.BB.value
+        board[3] = PieceType.BQ.value
+        board[4] = PieceType.BK.value
+
+        for index in range(8, 16):
+            board[index] = PieceType.BP.value
+        for index in range(48, 56):
+            board[index] = PieceType.WP.value
+        
+        board[56] = PieceType.WR.value
+        board[63] = PieceType.WR.value
+        board[57] = PieceType.WN.value
+        board[62] = PieceType.WN.value
+        board[58] = PieceType.WB.value
+        board[61] = PieceType.WB.value
+        board[59] = PieceType.WQ.value
+        board[60] = PieceType.WK.value
+
+        return board
 
     def get_child(self, chessMove : tuple):
+
+        if type(chessMove[0]) is not int:
+            chessMove = (self.square_to_board_index(chessMove[0]), self.square_to_board_index(chessMove[1]))
+
         node = self.children.get(chessMove)
 
         return node
@@ -79,13 +90,26 @@ class ChessNode():
         if self.children.get(chessMove) is not None:
             raise Exception("Tried to create child board state but it already exists!")
         
+        if type(chessMove[0]) is not int:
+            chessMove = (self.square_to_board_index(chessMove[0]), self.square_to_board_index(chessMove[1]))
+
         new_board = self.board[:]
         new_board[chessMove[1]] = new_board[chessMove[0]]
         new_board[chessMove[0]] = PieceType.E.value
 
-        self.children[chessMove] = ChessNode(import_board=new_board)
+        self.children[chessMove] = ChessNode(import_board=new_board, last_move=chessMove)
         self.children[chessMove].move = Turn.Black.value if self.move == Turn.White.value else Turn.White.value
 
+        return self.children[chessMove]
+
+    def get_last_move(self, chess_syntax=False):
+        if self.last_move is None:
+            return None
+        
+        if chess_syntax:
+            return (self.board_index_to_square(self.last_move[0]), self.board_index_to_square(self.last_move[1]))
+        
+        return self.last_move
 
     def print_board(self):
         print("______________________")
@@ -98,31 +122,31 @@ class ChessNode():
                     piece_str = colored('\u2654', 'black')
                 # white piece -- blue
                 elif piece == PieceType.WK.value:
-                    piece_str = colored("\u2654", 'blue')
+                    piece_str = colored("\u2654", 'light_blue')
                 elif piece == PieceType.WQ.value:
-                    piece_str = colored("\u2655", 'blue')
+                    piece_str = colored("\u2655", 'light_blue')
                 elif piece == PieceType.WR.value:
-                    piece_str = colored("\u2656", 'blue')
+                    piece_str = colored("\u2656", 'light_blue')
                 elif piece == PieceType.WN.value:
-                    piece_str = colored("\u2658", 'blue')
+                    piece_str = colored("\u2658", 'light_blue')
                 elif piece == PieceType.WB.value:
-                    piece_str = colored("\u2657", 'blue')
+                    piece_str = colored("\u2657", 'light_blue')
                 elif piece == PieceType.WP.value:
-                    piece_str = colored("\u2659", 'blue')
+                    piece_str = colored("\u2659", 'light_blue')
                 
                 # black piece -- red
                 elif piece == PieceType.BK.value:
-                    piece_str = colored("\u2654", 'red')
+                    piece_str = colored("\u2654", 'light_yellow')
                 elif piece == PieceType.BQ.value:
-                    piece_str = colored("\u2655", 'red')
+                    piece_str = colored("\u2655", 'light_yellow')
                 elif piece == PieceType.BR.value:
-                    piece_str = colored("\u2656", 'red')
+                    piece_str = colored("\u2656", 'light_yellow')
                 elif piece == PieceType.BN.value:
-                    piece_str = colored("\u2658", 'red')
+                    piece_str = colored("\u2658", 'light_yellow')
                 elif piece == PieceType.BB.value:
-                    piece_str = colored("\u2657", 'red')
+                    piece_str = colored("\u2657", 'light_yellow')
                 elif piece == PieceType.BP.value:
-                    piece_str = colored("\u2659", 'red')
+                    piece_str = colored("\u2659", 'light_yellow')
                 
                 print(piece_str, end = '|')
             print("")
@@ -171,7 +195,7 @@ class ChessNode():
             piece_path.append(other_square)
 
             # if piece encountered in path is friendly => Add to ally piece list
-            if self.is_same_color(king_square, self.board[other_square]):
+            if self.is_same_color(self.board[king_square], self.board[other_square]):
                 # if this is the second piece to be added, end path here (no check or pins here)
                 if(len(ally_piece) > 0):
                     break
@@ -206,7 +230,7 @@ class ChessNode():
             piece_path.append(other_square)
 
             # if piece encountered in path is friendly => Add to ally piece list
-            if self.is_same_color(king_square, self.board[other_square]):
+            if self.is_same_color(self.board[king_square], self.board[other_square]):
                 # if this is the second piece to be added, end path here (no check or pins here)
                 if(len(ally_piece) > 0):
                     break
@@ -241,7 +265,7 @@ class ChessNode():
             piece_path.append(other_square)
 
             # if piece encountered in path is friendly => Add to ally piece list
-            if self.is_same_color(king_square, self.board[other_square]):
+            if self.is_same_color(self.board[king_square], self.board[other_square]):
                 # if this is the second piece to be added, end path here (no check or pins here)
                 if(len(ally_piece) > 0):
                     break
@@ -275,7 +299,7 @@ class ChessNode():
             piece_path.append(other_square)
 
             # if piece encountered in path is friendly => Add to ally piece list
-            if self.is_same_color(king_square, self.board[other_square]):
+            if self.is_same_color(self.board[king_square], self.board[other_square]):
                 # if this is the second piece to be added, end path here (no check or pins here)
                 if(len(ally_piece) > 0):
                     break
@@ -309,7 +333,7 @@ class ChessNode():
             piece_path.append(other_square)
 
             # if piece encountered in path is friendly => Add to ally piece list
-            if self.is_same_color(king_square, self.board[other_square]):
+            if self.is_same_color(self.board[king_square], self.board[other_square]):
                 # if this is the second piece to be added, end path here (no check or pins here)
                 if(len(ally_piece) > 0):
                     break
@@ -343,7 +367,7 @@ class ChessNode():
             piece_path.append(other_square)
 
             # if piece encountered in path is friendly => Add to ally piece list
-            if self.is_same_color(king_square, self.board[other_square]):
+            if self.is_same_color(self.board[king_square], self.board[other_square]):
                 # if this is the second piece to be added, end path here (no check or pins here)
                 if(len(ally_piece) > 0):
                     break
@@ -377,7 +401,7 @@ class ChessNode():
             piece_path.append(other_square)
 
             # if piece encountered in path is friendly => Add to ally piece list
-            if self.is_same_color(king_square, self.board[other_square]):
+            if self.is_same_color(self.board[king_square], self.board[other_square]):
                 # if this is the second piece to be added, end path here (no check or pins here)
                 if(len(ally_piece) > 0):
                     break
@@ -411,7 +435,7 @@ class ChessNode():
             piece_path.append(other_square)
 
             # if piece encountered in path is friendly => Add to ally piece list
-            if self.is_same_color(king_square, self.board[other_square]):
+            if self.is_same_color(self.board[king_square], self.board[other_square]):
                 # if this is the second piece to be added, end path here (no check or pins here)
                 if(len(ally_piece) > 0):
                     break
@@ -436,6 +460,90 @@ class ChessNode():
                         break
             
             other_square += 9 # continue down path
+
+        # check knight attacks
+
+        # 2-up, 1-left
+        other_square = king_square - 17
+        if other_square >= 0 and (other_square % 8) < 7:
+            if (self.move == Turn.White.value and (self.board[other_square] == PieceType.BN.value)) or\
+                (self.move == Turn.Black.value and (self.board[other_square] == PieceType.WN.value)):
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
+                    
+
+        # 1-up, 2-left
+        other_square = king_square - 10
+        if other_square >= 0 and (other_square % 8) < 6:
+            if (self.move == Turn.White.value and (self.board[other_square] == PieceType.BN.value)) or\
+                (self.move == Turn.Black.value and (self.board[other_square] == PieceType.WN.value)):
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
+        
+        # 1-down, 2-left
+        other_square = king_square + 6
+        if other_square < 64 and (other_square % 8) < 6:
+            if (self.move == Turn.White.value and (self.board[other_square] == PieceType.BN.value)) or\
+                (self.move == Turn.Black.value and (self.board[other_square] == PieceType.WN.value)):
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
+        
+        # 2-down, 1-left
+        other_square = king_square + 15
+        if other_square < 64 and (other_square % 8) < 7:
+           if (self.move == Turn.White.value and (self.board[other_square] == PieceType.BN.value)) or\
+                (self.move == Turn.Black.value and (self.board[other_square] == PieceType.WN.value)):
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
+        
+            
+        # 2-up, 1-right
+        other_square = king_square - 15
+        if other_square >= 0 and (other_square % 8) > 0:
+            if (self.move == Turn.White.value and (self.board[other_square] == PieceType.BN.value)) or\
+                (self.move == Turn.Black.value and (self.board[other_square] == PieceType.WN.value)):
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
+        
+        # 1-up, 2-right
+        other_square = king_square - 6
+        if other_square >= 0 and (other_square % 8) > 1:
+            if (self.move == Turn.White.value and (self.board[other_square] == PieceType.BN.value)) or\
+                (self.move == Turn.Black.value and (self.board[other_square] == PieceType.WN.value)):
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
+        
+        # 1-down, 2-right
+        other_square = king_square + 10
+        if other_square < 64 and (other_square % 8) > 1:
+            if (self.move == Turn.White.value and (self.board[other_square] == PieceType.BN.value)) or\
+                (self.move == Turn.Black.value and (self.board[other_square] == PieceType.WN.value)):
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
+        
+        # 2-down, 1-right
+        other_square = king_square + 17
+        if other_square < 64 and (other_square % 8) > 0:
+            if (self.move == Turn.White.value and (self.board[other_square] == PieceType.BN.value)) or\
+                (self.move == Turn.Black.value and (self.board[other_square] == PieceType.WN.value)):
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
         
         if return_check_bool:
             return in_check
@@ -639,16 +747,15 @@ class ChessNode():
         double_check = False
 
         if in_check:
+            piece_found = False
             # check double check
-            # check from diagonal and vertical/horizontal
-            if ((not valid_king_directions[0] or not valid_king_directions[2]) 
-                and  (not valid_king_directions[1] or not valid_king_directions[3])):
-                double_check = True
-            
-            # check from double diagonal 
-            elif (not valid_king_directions[0] and not valid_king_directions[2]) or (not valid_king_directions[1] and not valid_king_directions[3]):
-                double_check = True
-        
+            for board_index in check_path:
+                if self.board[board_index] != PieceType.E.value:
+
+                    if piece_found:
+                        double_check = True
+                        break
+                    piece_found = True
         
         for index, safe in enumerate(valid_king_directions):
             
@@ -658,57 +765,97 @@ class ChessNode():
                 # upper-left
                 other_square = king_square - 9
                 if index == 0 and (other_square >= 0 and (other_square % 8) < 7) and not self.is_same_color(self.board[king_square], self.board[other_square]):
+                    saved_piece = self.board[other_square]
+                    self.board[other_square] = self.board[king_square]
+                    self.board[king_square] = PieceType.E.value
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
+                    self.board[king_square] = self.board[other_square]
+                    self.board[other_square] = saved_piece
                     continue
                 
                 # up
                 other_square = king_square - 8
                 if index == 1 and (other_square >= 0) and not self.is_same_color(self.board[king_square], self.board[other_square]):
+                    saved_piece = self.board[other_square]
+                    self.board[other_square] = self.board[king_square]
+                    self.board[king_square] = PieceType.E.value
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
+                    self.board[king_square] = self.board[other_square]
+                    self.board[other_square] = saved_piece
                     continue
                 
                 # upper-right
                 other_square = king_square - 7
                 if index == 2 and (other_square >= 0 and (other_square % 8) > 0) and not self.is_same_color(self.board[king_square], self.board[other_square]):
+                    saved_piece = self.board[other_square]
+                    self.board[other_square] = self.board[king_square]
+                    self.board[king_square] = PieceType.E.value
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
+                    self.board[king_square] = self.board[other_square]
+                    self.board[other_square] = saved_piece
                     continue
                 
                 # left
                 other_square = king_square - 1
                 if index == 3 and (other_square >= 0 and (other_square % 8) < 7) and not self.is_same_color(self.board[king_square], self.board[other_square]):
+                    saved_piece = self.board[other_square]
+                    self.board[other_square] = self.board[king_square]
+                    self.board[king_square] = PieceType.E.value
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
+                    self.board[king_square] = self.board[other_square]
+                    self.board[other_square] = saved_piece
                     continue
                 
                 # right
                 other_square = king_square + 1
                 if index == 4 and (other_square < 64 and (other_square % 8) > 0) and not self.is_same_color(self.board[king_square], self.board[other_square]):
+                    saved_piece = self.board[other_square]
+                    self.board[other_square] = self.board[king_square]
+                    self.board[king_square] = PieceType.E.value
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
+                    self.board[king_square] = self.board[other_square]
+                    self.board[other_square] = saved_piece
                     continue
                 
                 # lower-left
                 other_square = king_square + 7
                 if index == 5 and (other_square < 64 and (other_square % 8) < 7) and not self.is_same_color(self.board[king_square], self.board[other_square]):
+                    saved_piece = self.board[other_square]
+                    self.board[other_square] = self.board[king_square]
+                    self.board[king_square] = PieceType.E.value
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
+                    self.board[king_square] = self.board[other_square]
+                    self.board[other_square] = saved_piece
                     continue
                 
                 # bottom
                 other_square = king_square + 8
                 if index == 6 and (other_square < 64) and not self.is_same_color(self.board[king_square], self.board[other_square]):
+                    saved_piece = self.board[other_square]
+                    self.board[other_square] = self.board[king_square]
+                    self.board[king_square] = PieceType.E.value
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
+                    self.board[king_square] = self.board[other_square]
+                    self.board[other_square] = saved_piece
                     continue
 
                 # lower-right
                 other_square = king_square + 9
                 if index == 7 and (other_square < 64 and (other_square % 8) > 0) and not self.is_same_color(self.board[king_square], self.board[other_square]):
+                    saved_piece = self.board[other_square]
+                    self.board[other_square] = self.board[king_square]
+                    self.board[king_square] = PieceType.E.value
                     if not self.get_checks_and_pins(other_square, return_check_bool=True):
                         king_moves.append((king_square, other_square))
+                    self.board[king_square] = self.board[other_square]
+                    self.board[other_square] = saved_piece
                     continue
             
         return king_moves, in_check, double_check, check_path, pinned_squares
@@ -927,6 +1074,7 @@ class ChessNode():
                         move_list.append((current_square, current_square + 8))
                     
                     if self.board[current_square + 16] == PieceType.E.value:
+                        if len(check_path) == 0 or (current_square + 16 in check_path):
                             move_list.append((current_square, current_square + 16))
             else:
                 # black pawn can only move forward one square
