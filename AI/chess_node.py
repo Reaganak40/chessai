@@ -1186,7 +1186,3 @@ class ChessNode():
             return [(self.board_index_to_square(x), self.board_index_to_square(y)) for x, y in legal_moves]
 
         return legal_moves
-
-                
-node = ChessNode()
-print(node.square_to_board_index('e4'))
