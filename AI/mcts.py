@@ -77,12 +77,12 @@ class mcts():
             game_moves = self.game_path[:]
 
         self.reset_current()
-        
+        ret_input = ""
         for move in game_moves:
             self.show_game_state()
 
             # wait before continuing
-            ret_input = input("Press enter to continue...")
+            #ret_input = input("Press enter to continue...")
             clear()
             
             if ret_input == '0':
@@ -94,8 +94,10 @@ class mcts():
             self.checkout(move, add_if_not_exists=False)
         self.show_game_state()
 
-    def make_random_moves(self):
-        self.reset_current()
+    def make_random_moves(self, new_game=True):
+        
+        if new_game:
+            self.reset_current()
         ret_input = ""
 
         while True:
@@ -134,7 +136,7 @@ if __name__ == '__main__':
 
     elif load:
         tree = mcts(import_tree_file='model/mcts_tree.obj')
-        tree.make_random_moves()
+        tree.make_random_moves(new_game=False)
     else:
         tree = mcts()
         tree.make_random_moves()

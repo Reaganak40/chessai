@@ -187,6 +187,8 @@ class ChessNode():
 
         valid_king_directions = [True] * 8 # [top-left, top, top-right, left, right, bottom-left, bottom, bottom-right]
 
+        #* check rook and queen attacks
+
         # check left
         other_square = king_square - 1
         ally_piece = [] # keep track of friendly pieces in this path
@@ -217,7 +219,8 @@ class ChessNode():
                                 valid_king_directions[4] = False # Make enemy square valid if the king can take it.
                             else:
                                 valid_king_directions[3] = valid_king_directions[4] = False   # take away the horizontal plane from available chess moves
-
+                        break
+                    else:
                         break
 
             other_square -= 1 # continue down path
@@ -252,7 +255,8 @@ class ChessNode():
                                 valid_king_directions[3] = False # Make enemy square valid if the king can take it.
                             else:
                                 valid_king_directions[3] = valid_king_directions[4] = False   # take away the horizontal plane from available chess moves
-
+                        break
+                    else:
                         break
             
             other_square += 1 # continue down path
@@ -288,6 +292,8 @@ class ChessNode():
                             else:
                                 valid_king_directions[1] = valid_king_directions[6] = False   # take away the horizontal plane from available chess moves
                         break
+                    else:
+                        break
             
             other_square -= 8 # continue down path
         
@@ -322,9 +328,13 @@ class ChessNode():
                             else:
                                 valid_king_directions[1] = valid_king_directions[6] = False   # take away the horizontal plane from available chess moves
                         break
+                    else:
+                        break
             
             other_square += 8 # continue down path
         
+        #* check bishop and queen attacks
+
         # check upper-left
         other_square = king_square - 9
         ally_piece = [] # keep track of friendly pieces in this path
@@ -355,6 +365,8 @@ class ChessNode():
                                 valid_king_directions[7] = False # Make enemy square valid if the king can take it.
                             else:
                                 valid_king_directions[0] = valid_king_directions[7] = False   # take away the horizontal plane from available chess moves
+                        break
+                    else:
                         break
             
             other_square -= 9 # continue down path
@@ -390,6 +402,8 @@ class ChessNode():
                             else:
                                 valid_king_directions[2] = valid_king_directions[5] = False   # take away the horizontal plane from available chess moves
                         break
+                    else:
+                        break
             
             other_square -= 7 # continue down path
         
@@ -423,6 +437,8 @@ class ChessNode():
                                 valid_king_directions[2] = False # Make enemy square valid if the king can take it.
                             else:
                                 valid_king_directions[2] = valid_king_directions[5] = False   # take away the horizontal plane from available chess moves
+                        break
+                    else:
                         break
             
             other_square += 7 # continue down path
@@ -458,10 +474,12 @@ class ChessNode():
                             else:
                                 valid_king_directions[0] = valid_king_directions[8] = False   # take away the horizontal plane from available chess moves
                         break
+                    else:
+                        break
             
             other_square += 9 # continue down path
 
-        # check knight attacks
+        #* check knight attacks
 
         # 2-up, 1-left
         other_square = king_square - 17
@@ -544,6 +562,47 @@ class ChessNode():
                         return True
                     in_check = True                         # king is in check
                     check_path.extend([other_square])       # add path from enemy piece to king for check block
+
+        #* check pawn attacks
+
+        if self.move == Turn.White.value and king_square > 15:
+            # if white move and white king could potentially be attacked by a black pawn
+
+            if king_square % 8 != 0:
+                other_square = king_square - 9
+                if self.board[other_square] == PieceType.BP.value:
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
+            
+            if king_square % 8 != 7:
+                other_square = king_square - 7
+                if self.board[other_square] == PieceType.BP.value:
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
+        
+        elif self.move == Turn.Black.value and king_square < 48:
+            # if white move and white king could potentially be attacked by a black pawn
+
+            if king_square % 8 != 0:
+                other_square = king_square + 7
+                if self.board[other_square] == PieceType.WP.value:
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
+            
+            if king_square % 8 != 7:
+                other_square = king_square + 9
+                if self.board[other_square] == PieceType.WP.value:
+                    if return_check_bool:
+                        return True
+                    in_check = True                         # king is in check
+                    check_path.extend([other_square])       # add path from enemy piece to king for check block
+
         
         if return_check_bool:
             return in_check
@@ -1083,11 +1142,11 @@ class ChessNode():
                         move_list.append((current_square, current_square + 8))
 
             # check if can take at diagonal
-            if self.board[current_square + 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 7]) and not current_square % 8 < 7:
+            if current_square % 8 > 0 and self.board[current_square + 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 7]):
                 if len(check_path) == 0 or (current_square + 7 in check_path):
                     move_list.append((current_square, current_square + 7))
             
-            if self.board[current_square + 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 9]) and not current_square % 8 > 0:
+            if current_square % 8 < 7 and self.board[current_square + 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 9]):
                 if len(check_path) == 0 or (current_square + 9 in check_path):
                     move_list.append((current_square, current_square + 9))
 
@@ -1109,11 +1168,11 @@ class ChessNode():
                         move_list.append((current_square, current_square - 8))
 
             # check if can take at diagonal
-            if self.board[current_square - 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 7]) and not current_square % 8 > 0:
+            if current_square % 8 < 7 and self.board[current_square - 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 7]):
                 if len(check_path) == 0 or (current_square - 7 in check_path):
                     move_list.append((current_square, current_square - 7))
             
-            if self.board[current_square - 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 9]) and not current_square % 8 < 7:
+            if current_square % 8 > 0 and self.board[current_square - 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 9]):
                 if len(check_path) == 0 or (current_square - 9 in check_path):
                     move_list.append((current_square, current_square - 9))
 
