@@ -87,15 +87,15 @@ class mcts():
 
         self.reset_current()
         ret_input = ""
-        first_time = False
+        #first_time = False
 
         for move in game_moves:
 
-            if self.current.get_last_move(chess_syntax=True) != ('h3', 'd7') and not first_time:
-                self.checkout(move, add_if_not_exists=False)
-                continue
-            else:
-                first_time = True
+            # if self.current.get_last_move(chess_syntax=True) != ('h3', 'd7') and not first_time:
+            #     self.checkout(move, add_if_not_exists=False)
+            #     continue
+            # else:
+            #     first_time = True
                 
 
             self.show_game_state()
@@ -113,30 +113,17 @@ class mcts():
             self.checkout(move, add_if_not_exists=False)
         self.show_game_state()
 
-    def make_random_moves(self, new_game=True):
-        
+    def monte_carlo_tree_search(self, new_game=True):
         if new_game:
             self.reset_current()
-        ret_input = ""
+        
+        # * Step 1. Selection
+        
+        # while not at a leaf node
+        while len(self.current.children.keys()) > 0:
+            
 
-        while True:
-            # get current moves
-            moves = self.show_game_state()
 
-            # wait before continuing
-            ret_input = input("Press enter to continue...")
-            clear()
-
-            if ret_input == '1':
-                self.save_tree(tree_name='mcts_tree.obj')
-
-            if ret_input == '0':
-                break
-
-            # select random move
-            chosen_move = random.randint(0, len(moves) - 1)
-
-            self.checkout(moves[chosen_move], add_if_not_exists=True)
 
     def naive_bot_game(self, new_game=True):
         if new_game:
@@ -145,6 +132,9 @@ class mcts():
         while True:
             
             moves, state = self.define_state()
+
+            if state != StateEvaluation.PLAY.value:
+                break
 
             try:
                 suggested_move = NaiveBot.suggest_move_from_options(self.current, moves, random_move_odds=4)
@@ -209,24 +199,32 @@ class mcts():
         if node_evaluation != StateEvaluation.PLAY.value:
             print("Termination state reached:", node_evaluation)
             print("Number of Moves:", len(self.game_path))
+            print("Root states:", self.root.stats)
             self.save_tree(tree_name='mcts_tree.obj')
-            quit()
         
         return moves, node_evaluation
 
 
 if __name__ == '__main__':
 
-    replay = True
-    load = False
+    replay = False
+    load = True
 
     if replay:
         tree = mcts(import_tree_file='model/mcts_tree.obj')
         tree.replay_game()
 
     elif load:
+
         tree = mcts(import_tree_file='model/mcts_tree.obj')
-        tree.naive_bot_game(new_game=False)
+
+        print(len(tree.root.children.keys()))
+        for key, value in tree.root.children.items():
+            print("{}: {}".format(key, value.stats))
+
+        quit()
+        for _ in range(100):
+            tree.naive_bot_game(new_game=True)
     else:
         tree = mcts()
         tree.naive_bot_game(new_game=True)

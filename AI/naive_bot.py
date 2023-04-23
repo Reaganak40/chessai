@@ -18,7 +18,7 @@ class NaiveBot:
         move_value_states = []  # the value state based on potential new moves 
 
         for move in moves:
-            new_state : ChessNode = state.create_child(move, make_orphan=True) # don't add to node tree
+            new_state : ChessNode = state.create_child(move, make_orphan=True, get_if_exists=True) # don't add to node tree
 
             new_state_moves = new_state.get_legal_moves()
             

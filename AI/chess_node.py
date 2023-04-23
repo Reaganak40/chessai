@@ -44,7 +44,7 @@ class ChessNode():
     """ Chess Node containing all chess data for a given configuration
     """
 
-    def __init__(self, import_board : List[int] = None, last_move : tuple = None, state_evaluation : int = StateEvaluation.PLAY.value, last_progress : int = 0):
+    def __init__(self, import_board : List[int] = None, last_move : tuple = None, state_evaluation : int = StateEvaluation.PLAY.value, last_progress : int = 0, parent = None, stats : List = [0, 0, 0]):
         self.children : dict[tuple, ChessNode] = {}
         self.move = Turn.White.value
         self.white_can_castle = True
@@ -53,6 +53,9 @@ class ChessNode():
         self.last_move = last_move
         self.state_evaluation = state_evaluation
         self.last_progress = last_progress
+        
+        self.parent = None
+        self.stats = stats[:]
         
         if import_board is None:
             self.board = ChessNode.get_starting_board()
@@ -145,9 +148,19 @@ class ChessNode():
 
         return node
     
-    def create_child(self, chessMove : tuple, make_orphan=False):
+    def backpropogate_results(self, result_append_index):
+        self.stats[result_append_index] += 1
+
+        current = self.parent
+        while current is not None:
+            current.stats[result_append_index] += 1
+            current = current.parent
+
+    def create_child(self, chessMove : tuple, make_orphan=False, get_if_exists=False):
 
         if self.children.get(chessMove) is not None:
+            if get_if_exists:
+                return self.children[chessMove]
             raise Exception("Tried to create child board state but it already exists!")
         
         if type(chessMove[0]) is not int:
@@ -183,28 +196,39 @@ class ChessNode():
                 new_node.black_piece_value += self.get_piece_value(chessMove[2])
 
 
+        is_draw = False
         if piece_to_be_taken != PieceType.E.value:
             new_node.last_progress = 0 # reset move draw counter
 
             if piece_to_be_taken <= PieceType.WP.value:
                 if piece_to_be_taken == PieceType.WK.value:
+                    self.print_board()
+                    print("Move to be done:", chessMove)
                     raise Exception("White King was about to be taken.")
                 new_node.white_piece_value -= self.get_piece_value(piece_to_be_taken)
             else:
                 if piece_to_be_taken == PieceType.BK.value:
+                    self.print_board()
+                    print("Move to be done:", chessMove)
                     raise Exception("Black King was about to be taken.")
                 new_node.black_piece_value -= self.get_piece_value(piece_to_be_taken)
 
             if new_node.black_piece_value == 0 and new_node.white_piece_value == 0: # took last takable piece
                 new_node.state_evaluation = StateEvaluation.DRAW.value
+                is_draw = True
         
         elif new_node.last_progress >= 50: # 50 moves with no progress
             new_node.state_evaluation = StateEvaluation.DRAW.value
+            is_draw = True
         
         if make_orphan:
             return new_node
-
+        
         self.children[chessMove] = new_node
+        self.children[chessMove].parent = self
+        
+        if is_draw:
+            self.children[chessMove].backpropogate_results(2) # 2 is draw tally index
 
         return self.children[chessMove]
 
@@ -1320,7 +1344,7 @@ class ChessNode():
                             move_list.append((current_square, current_square - 9, PieceType.WB.value))
                             move_list.append((current_square, current_square - 9, PieceType.WN.value))
                     else:
-                        move_list.append((current_square, current_square - 7))
+                        move_list.append((current_square, current_square - 9))
 
     def get_legal_moves(self, current_move=None, chess_syntax=False):
 
@@ -1393,8 +1417,16 @@ class ChessNode():
         if len(legal_moves) == 0:
             if in_check:
                 self.state_evaluation = StateEvaluation.CHECKMATE.value
+
+                if self.move == Turn.White.value:
+                    self.backpropogate_results(1) # black won, 1 is index for black's win tally
+                else:
+                    self.backpropogate_results(0) # white won, 0 is index for white's win tally
+
             else:
                 self.state_evaluation = StateEvaluation.STALEMATE.value
+                self.backpropogate_results(2) # 2 is draw/stalemate tally index
+
 
         if chess_syntax:
             return [(self.board_index_to_square(xyz[0]), self.board_index_to_square(xyz[1])) if len(xyz) == 2 else (self.board_index_to_square(xyz[0]), self.board_index_to_square(xyz[1]), xyz[2])  for xyz in legal_moves]
