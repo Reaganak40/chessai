@@ -7,6 +7,16 @@ from termcolor import colored
 import sys
 
  
+class StateEvaluation(Enum):
+    """ Contains enumerator class definitions to identify state evaluations
+    """
+
+    PLAY = 0
+    DRAW = 1
+    CHECKMATE = 2
+    STALEMATE = 3
+
+
 class PieceType(Enum):
     """ Contains enumerator class definitions to identify pieces in a chess grid
     """
@@ -34,13 +44,15 @@ class ChessNode():
     """ Chess Node containing all chess data for a given configuration
     """
 
-    def __init__(self, import_board : List[int] = None, last_move : tuple = None):
+    def __init__(self, import_board : List[int] = None, last_move : tuple = None, state_evaluation : int = StateEvaluation.PLAY.value, last_progress : int = 0):
         self.children : dict[tuple, ChessNode] = {}
         self.move = Turn.White.value
         self.white_can_castle = True
         self.black_can_castle = True
 
         self.last_move = last_move
+        self.state_evaluation = state_evaluation
+        self.last_progress = last_progress
         
         if import_board is None:
             self.board = ChessNode.get_starting_board()
@@ -110,6 +122,8 @@ class ChessNode():
         
         return self.black_piece_value
 
+    def get_state_evaluation(self):
+        return self.state_evaluation
 
     def get_child(self, chessMove : tuple):
 
@@ -134,8 +148,12 @@ class ChessNode():
         new_board[chessMove[1]] = new_board[chessMove[0]]
         new_board[chessMove[0]] = PieceType.E.value
             
-        new_node = ChessNode(import_board=new_board, last_move=chessMove)
+        new_node = ChessNode(import_board=new_board, last_move=chessMove, state_evaluation=self.state_evaluation, last_progress=self.last_progress + 1)
+        new_node.move = Turn.Black.value if self.move == Turn.White.value else Turn.White.value
+        
         if piece_to_be_taken != PieceType.E.value:
+            new_node.last_progress = 0 # reset move draw counter
+
             if piece_to_be_taken == PieceType.WK.value:
                 raise Exception("White King was about to be taken.")
             elif piece_to_be_taken == PieceType.WQ.value:
@@ -157,9 +175,13 @@ class ChessNode():
                 new_node.black_piece_value -= 3
             elif piece_to_be_taken == PieceType.BP.value:
                 new_node.black_piece_value -= 1
-        
-        new_node.move = Turn.Black.value if self.move == Turn.White.value else Turn.White.value
 
+            if new_node.black_piece_value == 0 and new_node.white_piece_value == 0: # took last takable piece
+                new_node.state_evaluation = StateEvaluation.DRAW.value
+        
+        elif new_node.last_progress >= 50: # 50 moves with no progress
+            new_node.state_evaluation = StateEvaluation.DRAW.value
+        
         if make_orphan:
             return new_node
 
@@ -219,7 +241,6 @@ class ChessNode():
             print("\u203E", end='')
         print("")
 
-    
     def board_index_to_square(self, index : int):
         col = chr(ord('a') + index % 8)
         row = chr(ord('0') + 8 - int((index / 8)))
@@ -232,7 +253,6 @@ class ChessNode():
         
         return ((ord('8') - ord(square[1])) * 8) +  (ord(str.lower(square[0])) - ord('a')) 
 
-
     def is_same_color(self, piece1 : int, piece2 : int):
         if piece1 <= PieceType.WP.value and piece1 > PieceType.E.value:
             if piece2 <= PieceType.WP.value and piece2 > PieceType.E.value:
@@ -242,7 +262,6 @@ class ChessNode():
             if piece2 <= PieceType.BP.value and piece2 > PieceType.WP.value:
                 return True
         return False
-
 
     def get_checks_and_pins(self, king_square, return_check_bool = False):
 
@@ -537,7 +556,7 @@ class ChessNode():
                             if other_square == king_square + 9:
                                 valid_king_directions[0] = False # Make enemy square valid if the king can take it.
                             else:
-                                valid_king_directions[0] = valid_king_directions[8] = False   # take away the horizontal plane from available chess moves
+                                valid_king_directions[0] = valid_king_directions[7] = False   # take away the horizontal plane from available chess moves
                         break
                     else:
                         break
@@ -846,7 +865,6 @@ class ChessNode():
 
         return in_check, check_path, pinned_squares, valid_king_directions
         
-
     def get_king_moves(self):
         king_moves = []
 
@@ -983,7 +1001,6 @@ class ChessNode():
                     continue
             
         return king_moves, in_check, double_check, check_path, pinned_squares
-
 
     def check_axis_vertical_horizontal(self, move_list : List, current_square : int, piece : int, check_path : List[int]):
         # check left
@@ -1243,6 +1260,9 @@ class ChessNode():
 
     def get_legal_moves(self, current_move=None, chess_syntax=False):
 
+        if self.state_evaluation != StateEvaluation.PLAY.value:
+            return []
+        
         if current_move is None:
             current_move = self.move
         
@@ -1305,7 +1325,13 @@ class ChessNode():
                 #* CURRENT PIECE: PAWN
                 if piece == PieceType.BP.value:
                     self.check_pawn_moves(legal_moves, current_square, piece, check_path)
-        
+
+        if len(legal_moves) == 0:
+            if in_check:
+                self.state_evaluation = StateEvaluation.CHECKMATE.value
+            else:
+                self.state_evaluation = StateEvaluation.STALEMATE.value
+
         if chess_syntax:
             return [(self.board_index_to_square(x), self.board_index_to_square(y)) for x, y in legal_moves]
 

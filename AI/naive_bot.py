@@ -1,12 +1,18 @@
 from chess_node import *
+import random
 
 class NaiveBot:
 
     def __init__(self):
         pass
+    
+    def suggest_move_from_options(state : ChessNode, moves : List[tuple], random_move_odds : int = 1):
 
-    def suggest_move(state : ChessNode):
-        moves = state.get_legal_moves()
+        chosen_random = random.randint(0, random_move_odds) != 0
+        
+        if chosen_random:
+            chosen_move = random.randint(0, len(moves) - 1)
+            return moves[chosen_move]
 
         piece_value_states = [] # the value state based the opponents un-captured pieces
         move_value_states = []  # the value state based on potential new moves 
@@ -52,4 +58,10 @@ class NaiveBot:
 
         for index, mvs in enumerate(move_value_states):
             if mvs == max_state:
-                return moves[state_index]
+                return moves[index]
+        
+    def suggest_move(state : ChessNode, random_move_odds : int = 1):
+        moves = state.get_legal_moves()
+        return NaiveBot.suggest_move_from_options(moves, state, random_move_odds)
+
+        

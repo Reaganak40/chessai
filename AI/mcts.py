@@ -6,11 +6,15 @@ import random
 import pickle
 from pathlib import Path
 import datetime
+import traceback
 
 clear = lambda: os.system('cls')
 
 # find or create directory to save objects through pickle
 default_save_dir = Path(os.path.realpath(os.path.dirname(__file__))).absolute().joinpath('model')
+
+
+
 
 class mcts():
 
@@ -77,13 +81,15 @@ class mcts():
         if game_moves is None:
             game_moves = self.game_path[:]
 
+        print("Number of Moves:", len(game_moves))
+
         self.reset_current()
         ret_input = ""
         for move in game_moves:
             self.show_game_state()
 
             # wait before continuing
-            #ret_input = input("Press enter to continue...")
+            ret_input = input("Press enter to continue...")
             clear()
             
             if ret_input == '0':
@@ -123,21 +129,26 @@ class mcts():
     def naive_bot_game(self, new_game=True):
         if new_game:
             self.reset_current()
-        ret_input = ""
         
         while True:
             
-            self.show_game_state()
-            # wait before continuing
-            ret_input = input("Press enter to continue...")
-            clear()
-            
-            if ret_input == '0':
-                break
-            if ret_input == '1':
+            moves, state = self.define_state()
+
+            try:
+                suggested_move = NaiveBot.suggest_move_from_options(self.current, moves)
+            except Exception:
                 self.save_tree(tree_name='mcts_tree.obj')
+                print("Failure to suggest with Naive Bot")
+                traceback.print_exc()
+                quit()
             
-            self.checkout(NaiveBot.suggest_move(self.current), add_if_not_exists=True)
+            try:
+                self.checkout(suggested_move, add_if_not_exists=True)
+            except Exception:
+                self.save_tree(tree_name='mcts_tree.obj')
+                print("Failure to Create Child")
+                traceback.print_exc()
+                quit()
 
     
     def make_random_moves(self, new_game=True):
@@ -147,7 +158,7 @@ class mcts():
 
         while True:
             # get current moves
-            self.show_game_state()
+            moves = self.show_game_state()
 
             # wait before continuing
             ret_input = input("Press enter to continue...")
@@ -170,9 +181,22 @@ class mcts():
         with open(tree_name, 'wb+') as ofile:
             pickle.dump(self, ofile)
 
+    
+    def define_state(self):
+        moves = self.current.get_legal_moves() # gets moves and updates state evaluation
+        node_evaluation = self.current.get_state_evaluation()
+
+        if node_evaluation != StateEvaluation.PLAY.value:
+            print("Termination state reached:", node_evaluation)
+            self.save_tree(tree_name='mcts_tree.obj')
+            quit()
+        
+        return moves, node_evaluation
+
+
 if __name__ == '__main__':
 
-    replay = False
+    replay = True
     load = False
 
     if replay:
@@ -181,10 +205,10 @@ if __name__ == '__main__':
 
     elif load:
         tree = mcts(import_tree_file='model/mcts_tree.obj')
-        tree.make_random_moves(new_game=False)
+        tree.naive_bot_game(new_game=False)
     else:
         tree = mcts()
-        tree.naive_bot_game(new_game=False)
+        tree.naive_bot_game(new_game=True)
     quit()
 
     test_board = ChessNode.get_starting_board()
