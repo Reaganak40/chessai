@@ -1,7 +1,9 @@
 {
     "cSpell.words": [
+        "Backpropagation",
         "ifile",
         "mcts",
-        "ofile"
+        "ofile",
+        "relu"
     ]
 }

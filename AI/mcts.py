@@ -8,6 +8,7 @@ import pickle
 from pathlib import Path
 import datetime
 import traceback
+import math
 
 clear = lambda: os.system('cls')
 
@@ -117,11 +118,95 @@ class mcts():
         if new_game:
             self.reset_current()
         
-        # * Step 1. Selection
+        policy = NaiveBot.suggest_move_from_options
         
-        # while not at a leaf node
+        # * Step 1. Selection
+        # traverse down using UCT (and policy for tie-breakers) until leaf node found
         while len(self.current.children.keys()) > 0:
+            moves, state = self.define_state()
+
+            potential_moves = []
+            max_move_score = 0
             
+            # check all current node's possible next states
+            for move in moves:
+                child = self.current.children.get(move)
+                if child is None:
+                    # there are move(s) that have not been checked (infinite potential)    
+                    if max_move_score < float('inf'):
+                        max_move_score = float('inf')
+                        potential_moves = []
+                    potential_moves.append(move)
+                else:
+                    
+                    # stands for the number of simulations for the node considered after the i-th move
+                    n_i = sum(child.stats)
+                    
+                    # the win rate of the child state for whoever turn it is
+                    win_rate = child.stats[0] if child.move == Turn.White.value else child.stats[1]
+                    win_rate += child.stats[2] / 2 # add half points for draws
+                    win_rate /= n_i
+                    
+                    # stands for the total number of simulations after the i-th move run by the parent node of the one considered
+                    N_i = sum(self.current.stats)
+                    
+                    # Upper Confidence Bound 1 equation
+                    move_score = win_rate + (math.sqrt(2) * math.sqrt(math.log(N_i) / n_i))
+                    
+                    if move_score > max_move_score:
+                        max_move_score = move_score
+                        potential_moves = [move]
+                    elif move_score == max_move_score:
+                        potential_moves.append(move)
+                
+                if len(potential_moves) > 1:
+                    suggested_move = policy(self.current, potential_moves)
+                else:
+                    suggested_move = potential_moves[0]
+                
+            self.checkout(suggested_move, add_if_not_exists=True)
+            
+        #* Step 2. Expansion
+        moves, state = self.define_state()
+
+        # use policy to expand
+        suggested_move = policy(self.current, moves)
+
+        self.checkout(suggested_move, add_if_not_exists=True)
+        new_leaf_node = self.current
+
+        #* Step 3. Simulation
+
+        # simulate to terminal state using policy
+        while True:
+            moves, state = self.define_state()
+
+            if state != StateEvaluation.PLAY.value:
+                break
+
+            try:
+                suggested_move = NaiveBot.suggest_move_from_options(self.current, moves, random_move_odds=4)
+            except Exception:
+                self.save_tree(tree_name='mcts_tree.obj')
+                print("Failure to suggest with Naive Bot")
+                traceback.print_exc()
+                quit()
+            
+            try:
+                self.checkout(suggested_move, add_if_not_exists=True)
+            except Exception:
+                self.save_tree(tree_name='mcts_tree.obj')
+                print("Failure to Create Child")
+                traceback.print_exc()
+                quit()
+        
+        #* Step 4. Backpropagation
+        # win-loss-tie stats are updated automatically when a termination state is detected
+        # cut off random simulation from tree
+        new_leaf_node.children = {}
+        
+        # save updated mcts model
+        self.save_tree(tree_name='mcts_tree.obj')
 
 
 
@@ -184,7 +269,7 @@ class mcts():
             pickle.dump(self, ofile)
 
     
-    def define_state(self):
+    def define_state(self, save_on_termination_state=False):
         
         try:
             moves = self.current.get_legal_moves() # gets moves and updates state evaluation
@@ -200,7 +285,9 @@ class mcts():
             print("Termination state reached:", node_evaluation)
             print("Number of Moves:", len(self.game_path))
             print("Root states:", self.root.stats)
-            self.save_tree(tree_name='mcts_tree.obj')
+
+            if save_on_termination_state:
+                self.save_tree(tree_name='mcts_tree.obj')
         
         return moves, node_evaluation
 
@@ -220,14 +307,31 @@ if __name__ == '__main__':
 
         print(len(tree.root.children.keys()))
         for key, value in tree.root.children.items():
-            print("{}: {}".format(key, value.stats))
+            print("{}: {}  --> Explored {} times".format(key, value.stats, sum(value.stats)))
+
+        # node = tree.root.children[(51, 43)]
+        # print(len(node.children.keys()))
+        # for key, value in node.children.items():
+        #     print("{}: {}".format(key, value.stats))
+
+        
+        # node = node.children[(50, 42)]
+        # print(len(node.children.keys()))
+        # for key, value in node.children.items():
+        #     print("{}: {}".format(key, value.stats))
+
+        # node = node.children[(11, 27)]
+        # print(len(node.children.keys()))
+        # for key, value in node.children.items():
+        #     print("{}: {}".format(key, value.stats))
 
         quit()
-        for _ in range(100):
-            tree.naive_bot_game(new_game=True)
+        for _ in range(1000):
+            tree.monte_carlo_tree_search(new_game=True)
     else:
         tree = mcts()
-        tree.naive_bot_game(new_game=True)
+        for _ in range(100):
+            tree.monte_carlo_tree_search(new_game=True)
     quit()
 
     test_board = [PieceType.E.value] * 64
