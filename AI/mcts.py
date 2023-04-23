@@ -2,6 +2,7 @@ from chess_node import *
 from naive_bot import NaiveBot
 
 import os
+import sys
 import random
 import pickle
 from pathlib import Path
@@ -10,11 +11,12 @@ import traceback
 
 clear = lambda: os.system('cls')
 
+recursion_limit = 10000
+sys.setrecursionlimit(recursion_limit)
+
+
 # find or create directory to save objects through pickle
 default_save_dir = Path(os.path.realpath(os.path.dirname(__file__))).absolute().joinpath('model')
-
-
-
 
 class mcts():
 
@@ -85,7 +87,17 @@ class mcts():
 
         self.reset_current()
         ret_input = ""
+        first_time = False
+
         for move in game_moves:
+
+            if self.current.get_last_move(chess_syntax=True) != ('h3', 'd7') and not first_time:
+                self.checkout(move, add_if_not_exists=False)
+                continue
+            else:
+                first_time = True
+                
+
             self.show_game_state()
 
             # wait before continuing
@@ -135,7 +147,7 @@ class mcts():
             moves, state = self.define_state()
 
             try:
-                suggested_move = NaiveBot.suggest_move_from_options(self.current, moves)
+                suggested_move = NaiveBot.suggest_move_from_options(self.current, moves, random_move_odds=4)
             except Exception:
                 self.save_tree(tree_name='mcts_tree.obj')
                 print("Failure to suggest with Naive Bot")
@@ -183,11 +195,20 @@ class mcts():
 
     
     def define_state(self):
-        moves = self.current.get_legal_moves() # gets moves and updates state evaluation
+        
+        try:
+            moves = self.current.get_legal_moves() # gets moves and updates state evaluation
+        except Exception:
+                self.save_tree(tree_name='mcts_tree.obj')
+                print("Failure to get move list")
+                traceback.print_exc()
+                quit()
+        
         node_evaluation = self.current.get_state_evaluation()
 
         if node_evaluation != StateEvaluation.PLAY.value:
             print("Termination state reached:", node_evaluation)
+            print("Number of Moves:", len(self.game_path))
             self.save_tree(tree_name='mcts_tree.obj')
             quit()
         
@@ -211,14 +232,12 @@ if __name__ == '__main__':
         tree.naive_bot_game(new_game=True)
     quit()
 
-    test_board = ChessNode.get_starting_board()
+    test_board = [PieceType.E.value] * 64
+    test_board[56] = PieceType.WK.value
+    test_board[16] = PieceType.BK.value
+    test_board[49] = PieceType.BP.value
 
     node = ChessNode(import_board=test_board)
-    node = node.create_child(('e2', 'e3'))
-    node = node.create_child(('d7', 'd6'))
-    node = node.create_child(('h2', 'h3'))
-    node = node.create_child(('c7', 'c5'))
-    node = node.create_child(('f1', 'b5'))
 
     node.print_board()
     moves = node.get_legal_moves(chess_syntax=True)

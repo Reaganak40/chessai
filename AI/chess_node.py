@@ -115,6 +115,17 @@ class ChessNode():
 
         return board
 
+    def get_piece_value(self, piece_type : int):
+        if piece_type == PieceType.WQ.value or piece_type == PieceType.BQ.value:
+            return 9
+        elif piece_type == PieceType.WR.value or piece_type == PieceType.BR.value:
+            return 5
+        elif piece_type == PieceType.WN.value or piece_type == PieceType.WB.value or piece_type == PieceType.BN.value or piece_type == PieceType.BB.value:
+            return 3
+        elif piece_type == PieceType.WP.value or piece_type == PieceType.BP.value:
+            return 1
+        return 0
+
     def board_piece_value(self, color : int):
 
         if color == Turn.White.value:
@@ -145,36 +156,44 @@ class ChessNode():
         piece_to_be_taken = self.board[chessMove[1]]
         
         new_board = self.board[:]
-        new_board[chessMove[1]] = new_board[chessMove[0]]
+
+        promotion_side = 0
+        if len(chessMove) == 3: # pawn promotion
+            new_board[chessMove[1]] = chessMove[2]
+
+            if chessMove[2] <= PieceType.WP.value:
+                promotion_side = 1 # white
+            else:
+                promotion_side = 2 # black
+
+        else:
+            new_board[chessMove[1]] = new_board[chessMove[0]]
+        
         new_board[chessMove[0]] = PieceType.E.value
             
         new_node = ChessNode(import_board=new_board, last_move=chessMove, state_evaluation=self.state_evaluation, last_progress=self.last_progress + 1)
         new_node.move = Turn.Black.value if self.move == Turn.White.value else Turn.White.value
         
+        if promotion_side > 0:
+            new_node.last_progress = 0
+            
+            if promotion_side == 1:
+                new_node.white_piece_value += self.get_piece_value(chessMove[2])
+            else:
+                new_node.black_piece_value += self.get_piece_value(chessMove[2])
+
+
         if piece_to_be_taken != PieceType.E.value:
             new_node.last_progress = 0 # reset move draw counter
 
-            if piece_to_be_taken == PieceType.WK.value:
-                raise Exception("White King was about to be taken.")
-            elif piece_to_be_taken == PieceType.WQ.value:
-                new_node.white_piece_value -= 9
-            elif piece_to_be_taken == PieceType.WR.value:
-                new_node.white_piece_value -= 5
-            elif piece_to_be_taken == PieceType.WN.value or piece_to_be_taken == PieceType.WB.value:
-                new_node.white_piece_value -= 3
-            elif piece_to_be_taken == PieceType.WP.value:
-                new_node.white_piece_value -= 1
-            
-            if piece_to_be_taken == PieceType.BK.value:
-                raise Exception("Black King was about to be taken.")
-            elif piece_to_be_taken == PieceType.BQ.value:
-                new_node.black_piece_value -= 9
-            elif piece_to_be_taken == PieceType.BR.value:
-                new_node.black_piece_value -= 5
-            elif piece_to_be_taken == PieceType.BN.value or piece_to_be_taken == PieceType.BB.value:
-                new_node.black_piece_value -= 3
-            elif piece_to_be_taken == PieceType.BP.value:
-                new_node.black_piece_value -= 1
+            if piece_to_be_taken <= PieceType.WP.value:
+                if piece_to_be_taken == PieceType.WK.value:
+                    raise Exception("White King was about to be taken.")
+                new_node.white_piece_value -= self.get_piece_value(piece_to_be_taken)
+            else:
+                if piece_to_be_taken == PieceType.BK.value:
+                    raise Exception("Black King was about to be taken.")
+                new_node.black_piece_value -= self.get_piece_value(piece_to_be_taken)
 
             if new_node.black_piece_value == 0 and new_node.white_piece_value == 0: # took last takable piece
                 new_node.state_evaluation = StateEvaluation.DRAW.value
@@ -695,7 +714,7 @@ class ChessNode():
         if king_square % 8 == 0:
             valid_king_directions[0] = valid_king_directions[3] = valid_king_directions[5] = False
         
-        if king_square % 8 == 0:
+        if king_square % 8 == 7:
             valid_king_directions[2] = valid_king_directions[4] = valid_king_directions[7] = False
 
         if int(king_square / 8) == 0:
@@ -1221,16 +1240,40 @@ class ChessNode():
                 # black pawn can only move forward one square
                 if self.board[current_square + 8] == PieceType.E.value:
                     if len(check_path) == 0 or (current_square + 8 in check_path):
-                        move_list.append((current_square, current_square + 8))
+                        if current_square + 8 >= 56:
+                            # add third value is this pawn move will result in promotion
+                            move_list.append((current_square, current_square + 8, PieceType.BQ.value))
+                            move_list.append((current_square, current_square + 8, PieceType.BR.value))
+                            move_list.append((current_square, current_square + 8, PieceType.BB.value))
+                            move_list.append((current_square, current_square + 8, PieceType.BN.value))
+                        else:
+                            move_list.append((current_square, current_square + 8))
 
             # check if can take at diagonal
             if current_square % 8 > 0 and self.board[current_square + 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 7]):
                 if len(check_path) == 0 or (current_square + 7 in check_path):
-                    move_list.append((current_square, current_square + 7))
+                    
+                    if current_square + 7 >= 56:
+                            # add third value is this pawn move will result in promotion
+                            move_list.append((current_square, current_square + 7, PieceType.BQ.value))
+                            move_list.append((current_square, current_square + 7, PieceType.BR.value))
+                            move_list.append((current_square, current_square + 7, PieceType.BB.value))
+                            move_list.append((current_square, current_square + 7, PieceType.BN.value))
+                    else:
+                        move_list.append((current_square, current_square + 7))
+
+
             
             if current_square % 8 < 7 and self.board[current_square + 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square + 9]):
                 if len(check_path) == 0 or (current_square + 9 in check_path):
-                    move_list.append((current_square, current_square + 9))
+                    if current_square + 9 >= 56:
+                            # add third value is this pawn move will result in promotion
+                            move_list.append((current_square, current_square + 9, PieceType.BQ.value))
+                            move_list.append((current_square, current_square + 9, PieceType.BR.value))
+                            move_list.append((current_square, current_square + 9, PieceType.BB.value))
+                            move_list.append((current_square, current_square + 9, PieceType.BN.value))
+                    else:
+                        move_list.append((current_square, current_square + 9))
 
         # check if white pawn
         elif piece == PieceType.WP.value:
@@ -1247,16 +1290,37 @@ class ChessNode():
                 # black pawn can only move forward one square
                 if self.board[current_square - 8] == PieceType.E.value:
                     if len(check_path) == 0 or (current_square - 8 in check_path):
-                        move_list.append((current_square, current_square - 8))
+                        if current_square - 8 < 8:
+                            # add third value is this pawn move will result in promotion
+                            move_list.append((current_square, current_square - 8, PieceType.WQ.value))
+                            move_list.append((current_square, current_square - 8, PieceType.WR.value))
+                            move_list.append((current_square, current_square - 8, PieceType.WB.value))
+                            move_list.append((current_square, current_square - 8, PieceType.WN.value))
+                        else:
+                            move_list.append((current_square, current_square - 8))
 
             # check if can take at diagonal
             if current_square % 8 < 7 and self.board[current_square - 7] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 7]):
                 if len(check_path) == 0 or (current_square - 7 in check_path):
-                    move_list.append((current_square, current_square - 7))
+                    if current_square - 7 < 8:
+                            # add third value is this pawn move will result in promotion
+                            move_list.append((current_square, current_square - 7, PieceType.WQ.value))
+                            move_list.append((current_square, current_square - 7, PieceType.WR.value))
+                            move_list.append((current_square, current_square - 7, PieceType.WB.value))
+                            move_list.append((current_square, current_square - 7, PieceType.WN.value))
+                    else:
+                        move_list.append((current_square, current_square - 7))
             
             if current_square % 8 > 0 and self.board[current_square - 9] != PieceType.E.value and not self.is_same_color(piece, self.board[current_square - 9]):
                 if len(check_path) == 0 or (current_square - 9 in check_path):
-                    move_list.append((current_square, current_square - 9))
+                    if current_square - 9 < 8:
+                            # add third value is this pawn move will result in promotion
+                            move_list.append((current_square, current_square - 9, PieceType.WQ.value))
+                            move_list.append((current_square, current_square - 9, PieceType.WR.value))
+                            move_list.append((current_square, current_square - 9, PieceType.WB.value))
+                            move_list.append((current_square, current_square - 9, PieceType.WN.value))
+                    else:
+                        move_list.append((current_square, current_square - 7))
 
     def get_legal_moves(self, current_move=None, chess_syntax=False):
 
@@ -1333,6 +1397,6 @@ class ChessNode():
                 self.state_evaluation = StateEvaluation.STALEMATE.value
 
         if chess_syntax:
-            return [(self.board_index_to_square(x), self.board_index_to_square(y)) for x, y in legal_moves]
+            return [(self.board_index_to_square(xyz[0]), self.board_index_to_square(xyz[1])) if len(xyz) == 2 else (self.board_index_to_square(xyz[0]), self.board_index_to_square(xyz[1]), xyz[2])  for xyz in legal_moves]
 
         return legal_moves
