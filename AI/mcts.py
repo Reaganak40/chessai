@@ -1,4 +1,5 @@
 from chess_node import *
+from naive_bot import NaiveBot
 
 import os
 import random
@@ -119,6 +120,50 @@ class mcts():
 
             self.checkout(moves[chosen_move], add_if_not_exists=True)
 
+    def naive_bot_game(self, new_game=True):
+        if new_game:
+            self.reset_current()
+        ret_input = ""
+        
+        while True:
+            
+            self.show_game_state()
+            # wait before continuing
+            ret_input = input("Press enter to continue...")
+            clear()
+            
+            if ret_input == '0':
+                break
+            if ret_input == '1':
+                self.save_tree(tree_name='mcts_tree.obj')
+            
+            self.checkout(NaiveBot.suggest_move(self.current), add_if_not_exists=True)
+
+    
+    def make_random_moves(self, new_game=True):
+        if new_game:
+            self.reset_current()
+        ret_input = ""
+
+        while True:
+            # get current moves
+            self.show_game_state()
+
+            # wait before continuing
+            ret_input = input("Press enter to continue...")
+            clear()
+
+            if ret_input == '1':
+                self.save_tree(tree_name='mcts_tree.obj')
+
+            if ret_input == '0':
+                break
+
+            # select random move
+            chosen_move = random.randint(0, len(moves) - 1)
+
+            self.checkout(moves[chosen_move], add_if_not_exists=True)
+
     def save_tree(self, tree_name : str = str(datetime.datetime.now()).replace(':', '.') + ".obj"):
 
         tree_name = str(self.save_dir.joinpath(tree_name))
@@ -128,7 +173,7 @@ class mcts():
 if __name__ == '__main__':
 
     replay = False
-    load = True
+    load = False
 
     if replay:
         tree = mcts(import_tree_file='model/mcts_tree.obj')
@@ -139,7 +184,7 @@ if __name__ == '__main__':
         tree.make_random_moves(new_game=False)
     else:
         tree = mcts()
-        tree.make_random_moves()
+        tree.naive_bot_game(new_game=False)
     quit()
 
     test_board = ChessNode.get_starting_board()

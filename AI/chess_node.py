@@ -44,8 +44,35 @@ class ChessNode():
         
         if import_board is None:
             self.board = ChessNode.get_starting_board()
+
+            self.black_piece_value = 39
+            self.white_piece_value = 39
+
         else:
             self.board = import_board[:]
+
+            self.black_piece_value = 0
+            self.white_piece_value = 0
+            
+            for piece in self.board:
+                if piece == PieceType.WQ.value:
+                    self.white_piece_value += 9
+                elif piece == PieceType.WR.value:
+                    self.white_piece_value += 5
+                elif piece == PieceType.WN.value or piece == PieceType.WB.value:
+                    self.white_piece_value += 3
+                elif piece == PieceType.WP.value:
+                    self.white_piece_value += 1
+                
+                elif piece == PieceType.BQ.value:
+                    self.black_piece_value += 9
+                elif piece == PieceType.BR.value:
+                    self.black_piece_value += 5
+                elif piece == PieceType.BN.value or piece == PieceType.BB.value:
+                    self.black_piece_value += 3
+                elif piece == PieceType.BP.value:
+                    self.black_piece_value += 1
+
     
     def get_starting_board():
         board = [PieceType.E.value] * 64
@@ -76,6 +103,14 @@ class ChessNode():
 
         return board
 
+    def board_piece_value(self, color : int):
+
+        if color == Turn.White.value:
+            return self.white_piece_value
+        
+        return self.black_piece_value
+
+
     def get_child(self, chessMove : tuple):
 
         if type(chessMove[0]) is not int:
@@ -85,20 +120,50 @@ class ChessNode():
 
         return node
     
-    def create_child(self, chessMove : tuple):
+    def create_child(self, chessMove : tuple, make_orphan=False):
 
         if self.children.get(chessMove) is not None:
             raise Exception("Tried to create child board state but it already exists!")
         
         if type(chessMove[0]) is not int:
             chessMove = (self.square_to_board_index(chessMove[0]), self.square_to_board_index(chessMove[1]))
-
+    
+        piece_to_be_taken = self.board[chessMove[1]]
+        
         new_board = self.board[:]
         new_board[chessMove[1]] = new_board[chessMove[0]]
         new_board[chessMove[0]] = PieceType.E.value
+            
+        new_node = ChessNode(import_board=new_board, last_move=chessMove)
+        if piece_to_be_taken != PieceType.E.value:
+            if piece_to_be_taken == PieceType.WK.value:
+                raise Exception("White King was about to be taken.")
+            elif piece_to_be_taken == PieceType.WQ.value:
+                new_node.white_piece_value -= 9
+            elif piece_to_be_taken == PieceType.WR.value:
+                new_node.white_piece_value -= 5
+            elif piece_to_be_taken == PieceType.WN.value or piece_to_be_taken == PieceType.WB.value:
+                new_node.white_piece_value -= 3
+            elif piece_to_be_taken == PieceType.WP.value:
+                new_node.white_piece_value -= 1
+            
+            if piece_to_be_taken == PieceType.BK.value:
+                raise Exception("Black King was about to be taken.")
+            elif piece_to_be_taken == PieceType.BQ.value:
+                new_node.black_piece_value -= 9
+            elif piece_to_be_taken == PieceType.BR.value:
+                new_node.black_piece_value -= 5
+            elif piece_to_be_taken == PieceType.BN.value or piece_to_be_taken == PieceType.BB.value:
+                new_node.black_piece_value -= 3
+            elif piece_to_be_taken == PieceType.BP.value:
+                new_node.black_piece_value -= 1
+        
+        new_node.move = Turn.Black.value if self.move == Turn.White.value else Turn.White.value
 
-        self.children[chessMove] = ChessNode(import_board=new_board, last_move=chessMove)
-        self.children[chessMove].move = Turn.Black.value if self.move == Turn.White.value else Turn.White.value
+        if make_orphan:
+            return new_node
+
+        self.children[chessMove] = new_node
 
         return self.children[chessMove]
 
